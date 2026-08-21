@@ -1,0 +1,114 @@
+# ============================================================
+#  AnimeSama — .gitignore
+#  But : garder le dépôt léger (le code, pas les binaires/données)
+# ============================================================
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.eggs/
+
+# --- Environnements virtuels ---
+.venv/
+venv/
+env/
+
+# --- Caches d'outils (régénérés automatiquement) ---
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.hypothesis/
+.coverage
+coverage.xml
+htmlcov/
+
+# --- Node / build front ---
+node_modules/
+web/static/dist/
+# Ecrit par packaging/stamp_build.py au moment du packaging : c'est une propriete
+# du paquet produit, pas du depot.
+web/static/build-info.json
+
+# --- Secrets & config locale (garder .env.example suivi) ---
+.env
+.env.local
+*.local.json
+
+# Materiel de signature Authenticode. packaging/sign.bat lit SIGN_PFX : un
+# certificat depose dans le depot pour un essai partirait au premier « git add . ».
+*.pfx
+*.p12
+*.key
+
+
+# ============================================================
+#  Sorties de build PyInstaller (ne JAMAIS committer — plusieurs centaines de Mo)
+# ============================================================
+AnimeSama/
+# Ancre a la racine : c'est le dossier de PyInstaller. Le bundle front a sa
+# propre regle plus haut, chacune dit ce qu'elle vise.
+/dist/
+build/
+AnimeSama-Setup.exe
+# build_exe.bat renomme ainsi l'installeur d'un build precedent quand ISCC
+# echoue (l.217). 348 Mo, non couverts par la ligne au-dessus.
+*.PERIME.exe
+# Le README et build_exe.bat disent tous deux « zippe AnimeSama\ pour
+# distribuer » : l'archive de 1,2 Go atterrit a la racine.
+*.zip
+*.7z
+*.spec.bak
+
+# ============================================================
+#  Tout ce que les scripts (packaging/install.bat / install.sh) posent sur la machine
+# ============================================================
+# Binaires téléchargés (~144 Mo) : install.bat fait « mkdir bin » + télécharge
+# yt-dlp / ffmpeg / N_m3u8DL-RE / aria2c → dossier entièrement régénérable.
+bin/
+
+# Bootstrapper WebView2 (~1,7 Mo) : telecharge par packaging/build_exe.bat juste
+# avant ISCC, qui l'embarque dans l'installeur. Un binaire Microsoft dans le
+# depot, c'est une redistribution dont les conditions ne sont pas etablies ;
+# telecharge au build, l'installeur produit est identique.
+packaging/MicrosoftEdgeWebview2Setup.exe
+
+# Navigateurs Playwright (installés par « playwright install chromium »)
+# Normalement dans %LOCALAPPDATA%\ms-playwright, mais on ignore aussi côté projet par sécurité.
+ms-playwright/
+.playwright/
+
+# ============================================================
+#  Données & sorties de l'application (propres à chaque utilisateur)
+# ============================================================
+downloads/
+scans/
+data/
+*.log
+logs/
+
+# --- Captures WIP/preview posées à la racine (design/Playwright) ---
+# Ciblé sur la racine : ne touche PAS les PNG sources de web/static/img/.
+/wip-*.png
+
+# ============================================================
+#  Tests & navigateur (sorties, pas les tests eux-mêmes)
+# ============================================================
+test-results/
+.playwright-mcp/
+playwright-report/
+
+# --- IDE / outils locaux ---
+.vscode/
+.idea/
+# Les commandes de projet sont du contenu, pas de la config machine : elles
+# decrivent le travail a faire et se perdaient a chaque clone. Le reste de
+# .claude/ (etat local, reglages machine) reste ignore.
+.claude/*
+!.claude/commands/
+
+# --- OS ---
+Thumbs.db
+desktop.ini
+.DS_Store

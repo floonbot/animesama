@@ -1,0 +1,39 @@
+name: Idée
+description: Proposer une amélioration
+labels: ["idée"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        À lire d'abord : ce dépôt ne porte aucune licence et **les pull requests ne sont
+        pas fusionnées** — voir [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md). Une idée
+        reste utile, mais elle ne sera pas forcément suivie d'effet.
+
+  - type: textarea
+    id: probleme
+    attributes:
+      label: Le problème
+      description: >
+        Ce qui est pénible aujourd'hui, avec un exemple concret. Décrire la gêne plutôt
+        que la solution laisse ouvertes des réponses auxquelles tu n'aurais pas pensé.
+      placeholder: |
+        Quand la file contient 40 épisodes, retrouver celui qui a échoué demande de
+        faire défiler toute la liste.
+    validations:
+      required: true
+
+  - type: textarea
+    id: idee
+    attributes:
+      label: Ce que tu imagines
+      description: Facultatif — si tu as une idée précise de la forme.
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Ce que tu fais en attendant
+      description: Le contournement actuel, s'il y en a un.
+    validations:
+      required: false

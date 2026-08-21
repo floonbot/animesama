@@ -1,0 +1,217 @@
+/* Les cartes du diagnostic reprennent des noms de classe generiques (.card,
+   .row, .k, .v) : tout est porte par #page-diag pour qu'ils ne debordent
+   jamais sur le reste de l'application. */
+
+.diag-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.diag-dot {
+  width: 10px; height: 10px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.diag-dot.ok { background: var(--green); box-shadow: 0 0 10px var(--green-soft); }
+.diag-dot.ko { background: var(--red);   box-shadow: 0 0 10px var(--red-soft); }
+
+.diag-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--dim);
+}
+
+.diag-meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--muted);
+  min-width: 76px;
+}
+
+.diag-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--dim);
+  cursor: pointer;
+}
+
+.diag-select {
+  padding: 5px 10px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-pill);
+  color: var(--text-soft);
+  font-family: inherit;
+  font-size: var(--text-xs);
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--duration-fast) var(--ease);
+}
+.diag-select:focus { border-color: var(--border-focus); }
+
+#page-diag .diag-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  align-items: start;
+  gap: var(--space-4);
+}
+
+#page-diag .card {
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-glass);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--duration-fast) var(--ease);
+}
+#page-diag .card:hover { border-color: var(--border-strong); }
+
+#page-diag .card h2 {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--muted);
+}
+
+#page-diag .full { grid-column: 1 / -1; }
+
+/* Les deux actions de la carte Librairie. Elles suivent des .row, dont la
+   derniere porte encore sa bordure basse : la marge haute l'en detache. */
+#page-diag .diag-lib-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+#page-diag .row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--text-sm);
+}
+#page-diag .row:last-child { border-bottom: 0; }
+
+#page-diag .k { color: var(--muted); }
+#page-diag .v {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-semibold);
+  color: var(--text);
+  text-align: right;
+}
+#page-diag .v.ok   { color: var(--green); }
+#page-diag .v.ko   { color: var(--red); }
+#page-diag .v.warn { color: var(--amber); }
+
+#page-diag .bar {
+  height: 6px;
+  margin-top: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--bg4);
+  overflow: hidden;
+}
+#page-diag .bar i {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--gradient-brand);
+}
+
+#page-diag table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+#page-diag th,
+#page-diag td {
+  padding: 5px var(--space-2);
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+}
+#page-diag th:first-child,
+#page-diag td:first-child { text-align: left; }
+#page-diag th {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--muted);
+}
+#page-diag td { font-variant-numeric: tabular-nums; color: var(--text-soft); }
+#page-diag td.ok   { color: var(--green); }
+#page-diag td.ko   { color: var(--red); }
+#page-diag td.warn { color: var(--amber); }
+
+#page-diag .logbox {
+  max-height: 340px;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.55;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(123, 180, 244, .18) transparent;
+}
+#page-diag .logbox::-webkit-scrollbar { width: 5px; }
+#page-diag .logbox::-webkit-scrollbar-track { background: transparent; }
+#page-diag .logbox::-webkit-scrollbar-thumb {
+  background: rgba(123, 180, 244, .18);
+  border-radius: var(--radius-pill);
+}
+
+#page-diag .logline {
+  display: flex;
+  gap: var(--space-2);
+  padding: 2px 0;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+#page-diag .logline .lt { flex: 0 0 auto; color: var(--muted); }
+#page-diag .logline .lv { flex: 0 0 52px; font-weight: var(--weight-bold); }
+#page-diag .logline .lv.ok   { color: var(--green); }
+#page-diag .logline .lv.ko   { color: var(--red); }
+#page-diag .logline .lv.warn { color: var(--amber); }
+#page-diag .logline .lv.dim  { color: var(--muted); }
+#page-diag .logline .ll  { flex: 0 0 auto; color: var(--purple-light); }
+#page-diag .logline .lid { flex: 0 0 auto; color: var(--rem-light); }
+#page-diag .logline .lm  { overflow: hidden; text-overflow: ellipsis; color: var(--text-soft); }
+#page-diag .logline.clickable { cursor: pointer; }
+#page-diag .logline.clickable:hover { background: rgba(123, 180, 244, .08); }
+
+#page-diag .log-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  font-size: var(--text-xs);
+}
+#page-diag .log-clear {
+  padding: 2px 10px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-pill);
+  color: var(--dim);
+  font-family: inherit;
+  font-size: var(--text-xs);
+  transition: border-color var(--duration-fast) var(--ease),
+              color var(--duration-fast) var(--ease);
+}
+#page-diag .log-clear:hover { border-color: var(--red-border); color: var(--red); }
+
+@media (max-width: 768px) {
+  #page-diag .diag-grid { grid-template-columns: 1fr; }
+  .diag-toolbar { width: 100%; }
+}

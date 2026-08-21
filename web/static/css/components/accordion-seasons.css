@@ -1,0 +1,115 @@
+.ep-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-3) 0 var(--space-2);
+}
+
+.ep-chip {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 9px 6px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  transition: background var(--duration-fast) var(--ease),
+              border-color var(--duration-fast) var(--ease),
+              transform var(--duration-fast) var(--ease);
+}
+.ep-chip:hover {
+  background: rgba(74,143,232,.12);
+  border-color: var(--rem);
+  transform: translateY(-1px);
+}
+
+.ep-num {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.ep-lang {
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.ep-checkbox {
+  position: absolute;
+  top: 5px; right: 5px;
+  cursor: pointer;
+  accent-color: var(--rem);
+}
+
+.seasons-accordion-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.season-accordion {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.season-accordion summary { list-style: none; }
+.season-accordion summary::-webkit-details-marker { display: none; }
+
+.season-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px var(--space-4);
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  background: var(--bg3);
+  transition: background var(--duration-fast) var(--ease);
+}
+
+.season-summary:hover { background: var(--bg4); }
+
+.season-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text);
+  flex: 1;
+}
+
+.season-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--muted);
+  background: var(--bg2);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+}
+
+.season-chevron {
+  font-size: var(--text-base);
+  color: var(--dim);
+  transition: transform var(--duration-fast) var(--ease);
+  flex-shrink: 0;
+}
+
+.season-accordion[open] .season-chevron {
+  transform: rotate(180deg);
+}
+
+.season-grid {
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  animation: accordionOpen .2s var(--ease-out) both;
+}
+
+@keyframes accordionOpen {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

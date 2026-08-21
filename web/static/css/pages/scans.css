@@ -1,0 +1,65 @@
+
+#modal-scans .modal-box{max-width:720px;padding:0;overflow:hidden}
+#modal-scans .sc-head{display:flex;align-items:center;gap:14px;padding:18px 20px;position:relative;
+  background:linear-gradient(135deg,rgba(74,143,232,.28),rgba(232,80,138,.20)),var(--bg2)}
+#modal-scans .sc-coverbox{position:relative;width:52px;height:72px;flex-shrink:0;border-radius:8px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.45)}
+#modal-scans .sc-cover{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#modal-scans .sc-cover-ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg3);font-size:24px}
+#modal-scans .sc-htitle{flex:1;min-width:0}
+#modal-scans .sc-htitle h2{font-family:var(--font-display);font-size:var(--text-lg);font-weight:800;letter-spacing:var(--tracking-tight);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#modal-scans .sc-sub{font-size:12px;color:var(--muted);font-weight:600;margin-top:3px}
+#modal-scans .sc-close{position:absolute;top:14px;right:16px}
+#modal-scans .sc-body{padding:16px 20px 20px}
+#modal-scans .sc-sec{font-size: var(--text-xs);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:0 0 9px}
+#modal-scans .sc-input{padding:7px 10px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text)}
+#modal-scans .sc-tool{background:var(--bg2);border:1px solid var(--border2)}
+#modal-scans .scan-chip{min-width:42px;padding:8px 6px;border-radius:8px;border:1px solid var(--border2);
+  background:var(--bg3);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;text-align:center;
+  transition:transform .12s,background .12s,border-color .12s}
+#modal-scans .scan-chip:hover{transform:translateY(-2px);border-color:var(--rem)}
+#modal-scans .scan-chip:focus-visible{outline:2px solid var(--rem-light);outline-offset:2px}
+#modal-scans .scan-chip:active{transform:translateY(0) scale(.96)}
+#modal-scans .scan-chip-on{background:linear-gradient(135deg,var(--rem),var(--ram));color:#fff;border-color:transparent}
+#modal-scans .sc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:8px;
+  max-height:40vh;overflow:auto;padding:12px;background:var(--bg);border:1px solid var(--border2);border-radius:10px}
+#modal-scans .sc-divider{height:1px;background:var(--border2);margin:16px 0}
+
+#modal-scan-reader{--rw:60%;--br:1}
+#modal-scan-reader .rd-top{display:flex;align-items:center;gap:var(--space-3);padding:9px 14px;flex-shrink:0;position:relative;
+  background:rgba(7,12,22,.82);-webkit-backdrop-filter:var(--surface-blur);backdrop-filter:var(--surface-blur);border-bottom:1px solid rgba(120,180,255,.18);color:#eaf2ff}
+#modal-scan-reader .rd-progress{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--border2)}
+#modal-scan-reader .rd-progress-bar{display:block;height:100%;width:100%;transform:scaleX(0);transform-origin:left;
+  background:var(--gradient-brand);box-shadow:0 0 8px rgba(74,143,232,.5);transition:transform var(--duration) var(--ease-out)}
+#reader-scroll:focus-visible{outline:2px solid var(--border-focus);outline-offset:-2px}
+#modal-scan-reader .rd-title{flex:1;min-width:0;text-align:center;font-weight:800;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#modal-scan-reader .rd-title span{color:#9fc2ef;font-weight:600;font-size:13px}
+#modal-scan-reader .rd-body{flex:1;display:flex;min-height:0}
+#modal-scan-reader .rd-panel{width:172px;flex-shrink:0;overflow-y:auto;padding:18px 12px;display:flex;flex-direction:column;gap:var(--space-5);
+  background:rgba(7,12,22,.5);-webkit-backdrop-filter:var(--surface-blur);backdrop-filter:var(--surface-blur);color:#dbe9ff}
+#modal-scan-reader .rd-panel.right{border-left:1px solid rgba(120,180,255,.14)}
+#modal-scan-reader .rd-panel.left{border-right:1px solid rgba(120,180,255,.14)}
+#modal-scan-reader .rd-sec{display:flex;flex-direction:column;gap:9px;align-items:center}
+#modal-scan-reader .rd-sec h4{margin:0;font-size: var(--text-2xs);letter-spacing:.1em;text-transform:uppercase;color:#9fc2ef;font-weight:800}
+#modal-scan-reader .rd-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+#modal-scan-reader .rd-btn{background:rgba(255,255,255,.08);color:#dbe9ff;border:none;border-radius:8px;
+  padding:8px 12px;cursor:pointer;font-weight:700;font-size: var(--text-base);transition:background .15s}
+#modal-scan-reader .rd-btn:hover{background:rgba(120,180,255,.28)}
+#modal-scan-reader .rd-btn.on{background:linear-gradient(135deg,var(--rem),var(--ram));color:#fff}
+#modal-scan-reader .rd-sel{width:100%;padding:9px;border-radius:8px;background:#0a1526;color:#fff;
+  border:1px solid rgba(120,180,255,.3);font-weight:700;cursor:pointer}
+#modal-scan-reader .rd-nav{flex:1;background:linear-gradient(135deg,var(--rem),var(--ram));color:#fff;border:none;
+  border-radius:8px;padding:10px;cursor:pointer;font-weight:800;font-size: var(--text-base);transition:transform .15s,opacity .15s}
+#modal-scan-reader .rd-nav:hover:not(:disabled){transform:translateY(-2px)}
+#modal-scan-reader .rd-nav:disabled{opacity:.35;cursor:default}
+#modal-scan-reader input[type=range]{width:100%;accent-color:var(--rem)}
+#reader-scroll{flex:1;overflow-y:scroll;overflow-x:hidden;padding:10px 0 28px;text-align:center;filter:brightness(var(--br))}
+#reader-scroll img{display:block;margin:0 auto 3px;width:var(--rw);max-width:100%;height:auto;border-radius:var(--radius-xs);background:#0a1526;border:1px solid var(--border);box-shadow:var(--shadow-float)}
+#reader-scroll.rd-h{display:flex;flex-direction:row;align-items:flex-start;overflow-x:auto;overflow-y:hidden;gap:8px;padding:12px;text-align:left}
+#reader-scroll.rd-h img{width:auto;height:calc(100vh - 120px);max-width:none;margin:0}
+/* Firefox n'a jamais eu ::-webkit-scrollbar : le lecteur de scans y affichait
+   la barre du systeme, en clair sur un fond noir. */
+#reader-scroll{scrollbar-width:thin;scrollbar-color:rgba(120,180,255,.55) rgba(0,0,0,.3)}
+#reader-scroll::-webkit-scrollbar{width:14px;height:14px}
+#reader-scroll::-webkit-scrollbar-track{background:rgba(0,0,0,.3)}
+#reader-scroll::-webkit-scrollbar-thumb{background:rgba(120,180,255,.55);border-radius:7px;border:3px solid transparent;background-clip:padding-box}
+@media(max-width:760px){#modal-scan-reader .rd-panel{width:120px;padding:12px 6px}}

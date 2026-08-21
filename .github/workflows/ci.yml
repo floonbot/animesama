@@ -1,0 +1,49 @@
+name: CI
+
+# Windows, et Windows seulement : c'est la cible reelle de l'application
+# (WebView2, keyring via pywin32-ctypes, les .bat de packaging, l'installeur
+# Inno). Une CI verte sur Linux ne dirait rien de ce qui casse chez les gens.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  controles:
+    name: ruff · mypy · pytest
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      # constraints.txt epingle 38 versions exactes : c'est ce qui rend
+      # l'installation reproductible, on s'en sert aussi ici.
+      - name: Dependances
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/requirements.txt -c requirements/constraints.txt
+          pip install -r requirements/requirements-dev.txt
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Typage
+        run: mypy .
+
+      # Pas de -p no:randomly : l'ordre aleatoire est le filet contre la
+      # pollution d'etat entre tests. Un echec qui ne se reproduit qu'a
+      # certaines graines est un vrai bug, et la graine est dans le journal.
+      - name: Tests
+        run: pytest -q

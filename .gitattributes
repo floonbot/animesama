@@ -1,0 +1,29 @@
+# ============================================================
+#  Fins de ligne — règle explicite (plus de warning "LF -> CRLF")
+# ============================================================
+
+# Par défaut : git détecte le texte et le normalise en LF (repo + working copy)
+# LF partout : tes fichiers (y compris .bat) sont déjà en LF et fonctionnent sur Windows 11.
+* text=auto eol=lf
+
+# ============================================================
+#  Binaires — jamais de conversion de fins de ligne
+# ============================================================
+*.exe   binary
+*.dll   binary
+*.pyd   binary
+*.so    binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.mp4   binary
+*.mkv   binary
+*.zip   binary
+*.jar   binary

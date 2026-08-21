@@ -1,0 +1,154 @@
+/* Paramètres — page routée depuis C13, plus une modale.
+   Les styles du bloc « compte » viennent de components/modal.css : ils
+   n'appartenaient plus à un composant modal une fois la page en place. */
+
+/* auto-fit sans plafond etirait quatre colonnes sur un ecran de 2294 px, avec
+   des cartes de hauteurs disparates. Deux colonnes au maximum, centrees, et
+   une piste de largeur bornee : la colonne de lecture reste constante quelle
+   que soit la taille de la fenetre. */
+.set-largeur {
+  max-width: 960px;
+  margin-inline: auto;
+}
+
+.set-page {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: minmax(0, 1fr);
+  margin-bottom: var(--space-5);
+}
+
+@media (min-width: 900px) {
+  .set-page { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Le message d'erreur parle du formulaire entier, pas d'une colonne. */
+.set-page .form-error { grid-column: 1 / -1; }
+
+/* align-items: start est retire du conteneur : les cartes d'une meme rangee
+   s'etirent donc sur la plus haute. « Telechargement » et « Dossiers » cote a
+   cote ne se terminaient pas au meme endroit, ce qui donnait une page en
+   escalier. */
+.set-groupe {
+  padding: var(--space-5);
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  min-width: 0;
+}
+.set-groupe .form-group:last-child { margin-bottom: 0; }
+
+/* Les cartes etaient des <fieldset>/<legend> : le legend est place par le
+   navigateur sur la bordure haute et echappe au padding de sa propre carte —
+   mesure a 1280 px, titre a 0 px du bord haut contre 21 px pour le titre de la
+   carte « Compte », qui est un bloc normal. Les cinq cartes sont donc des
+   <section role="group" aria-labelledby> : le groupe reste annonce par son
+   intitule, et le titre se pose enfin dans le meme flux que le contenu.
+
+   Syne est une display faite pour les grands titres ; a 14 px son chasse-serre
+   ecrasait le mot. Le titre de page reste en Syne, les intitules de section
+   passent au corps de texte en 700. */
+.set-legende {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  letter-spacing: normal;
+  color: var(--text);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+}
+
+/* L'emoji heritait du chasse-serre negatif et se collait au mot. */
+.set-legende-icone {
+  flex-shrink: 0;
+  font-size: 1.05em;
+  line-height: 1;
+  letter-spacing: normal;
+}
+
+.set-actions-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.set-etat {
+  font-size: var(--text-xs);
+  color: var(--green);
+  font-weight: 600;
+}
+
+.set-dossier-ligne {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+.set-dossier-ligne .search-input { flex: 1; min-width: 0; }
+.set-parcourir { flex-shrink: 0; white-space: nowrap; }
+.set-parcourir.hidden { display: none; }
+
+.set-verdict:empty { display: none; }
+.set-verdict-ok      { color: var(--green); }
+.set-verdict-avertit { color: var(--amber); }
+.set-verdict-ko      { color: var(--red); }
+
+/* Le bloc « compte » est un frere du formulaire, pas une de ses cellules :
+   grid-column n'y pouvait rien. Il suit la meme largeur bornee. */
+.set-compte { margin-bottom: var(--space-5); }
+
+.set-user-section,
+.set-login-section {
+  margin-bottom: var(--space-4);
+}
+
+.set-user-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+}
+
+.set-user-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.set-user-icon {
+  font-size: 24px;
+  width: 40px; height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg4);
+  border-radius: 50%;
+  border: 1px solid var(--border2);
+}
+
+.set-username {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.set-connected {
+  font-size: var(--text-xs);
+  color: var(--green);
+  font-weight: 600;
+}
+
+.set-connect-btn { width: 100%; }
+.set-logout-btn  { flex-shrink: 0; }
+
+@media (max-width: 600px) {
+  .set-dossier-ligne { flex-direction: column; align-items: stretch; }
+}

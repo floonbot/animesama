@@ -1,0 +1,41 @@
+[project]
+name = "anime-downloader"
+version = "2.0.0"
+requires-python = ">=3.13"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "ASYNC"]
+ignore = ["E501", "E402", "E701", "E741", "ASYNC109", "ASYNC110", "ASYNC240"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["E731", "B011"]
+
+[tool.black]
+line-length = 100
+target-version = ["py313"]
+
+[tool.mypy]
+python_version = "3.13"
+warn_unused_ignores = true
+ignore_missing_imports = true
+check_untyped_defs = true
+exclude = ["^tests/"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q -m 'not integration'"
+markers = [
+    "integration: real-IO end-to-end tests (real ffmpeg/subprocess); deselected by default, run with -m integration",
+]
+
+[tool.coverage.report]
+exclude_also = [
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    'if getattr\(sys, "frozen", False\):',
+    "if sys.stdout is None or sys.stderr is None:",
+]

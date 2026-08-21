@@ -1,0 +1,15 @@
+# Cibles reelles de l'interface, et rien d'autre.
+#
+# L'application n'est pas distribuee sur le web : elle embarque son propre
+# navigateur. La fenetre de bureau tourne dans WebView2, c'est-a-dire le moteur
+# d'Edge, mis a jour en continu par Windows. Firefox n'est la que parce que la
+# suite e2e s'y execute aussi.
+#
+# Sans ce fichier, les outils de compatibilite visent leur liste par defaut —
+# Safari, Chrome ancien, Samsung Internet — et signalent des defauts que ce
+# projet ne peut pas rencontrer. Declarer la cible n'est pas faire taire un
+# avertissement : c'est documenter ce que le projet supporte.
+
+last 2 edge versions
+last 2 chrome versions
+last 2 firefox versions

@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <!-- Pas de theme-color : il teinte la barre d'adresse du navigateur, et cette
+       page s'affiche dans une fenetre WebView2 a cadre Win32 natif. Rien a
+       teinter, donc rien a declarer — l'outil de compatibilite avait raison de
+       le signaler, il ne servait a rien ici. -->
+  <title>Anime Downloader</title>
+
+  <link rel="icon" href="/favicon.png" type="image/png" sizes="512x512">
+
+  <link rel="stylesheet" href="/css/boot.css">
+
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/dmsans-400-1.woff2" crossorigin>
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/dmsans-400-2.woff2" crossorigin>
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/syne-800-3.woff2" crossorigin>
+  <link rel="stylesheet" href="/fonts/fonts.css">
+
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components/sidebar.css">
+  <link rel="stylesheet" href="/css/components/cards.css">
+  <link rel="stylesheet" href="/css/components/modal.css">
+  <link rel="stylesheet" href="/css/components/accordion-seasons.css">
+  <link rel="stylesheet" href="/css/components/toast.css">
+  <link rel="stylesheet" href="/css/pages/home.css">
+
+  <link rel="stylesheet" href="/css/components/queue.css">
+  <link rel="stylesheet" href="/css/pages/search.css">
+  <link rel="stylesheet" href="/css/pages/favorites.css">
+  <link rel="stylesheet" href="/css/pages/library.css">
+  <link rel="stylesheet" href="/css/pages/scans.css">
+  <link rel="stylesheet" href="/css/pages/settings.css">
+  <link rel="stylesheet" href="/css/pages/diag.css">
+  <link rel="stylesheet" href="/css/effects.css">
+
+  <link rel="modulepreload" href="/dist/app.js">
+</head>
+<body>
+
+  <div id="boot-loader" role="status" aria-label="Chargement de l'application">
+    <div class="boot-inner">
+      <div class="boot-logo"><span class="boot-ring"></span><span class="boot-icon">⛩️</span></div>
+      <div class="boot-title" lang="ja">アニメ</div>
+      <div class="boot-sub">Anime Downloader</div>
+      <div class="boot-bar"><i></i></div>
+    </div>
+  </div>
+
+  <a href="#main-content" class="skip-link">Aller au contenu</a>
+
+  <div id="bg"></div>
+  <div id="page-bg"></div>
+  <div id="sakura-container"></div>
+
+  <button class="menu-toggle" id="menu-toggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="sidebar" type="button">☰</button>
+
+  <div class="nav-arrows" id="nav-arrows" aria-label="Navigation">
+    <button class="nav-arrow nav-arrow-disabled" id="nav-back" type="button"
+            title="Page précédente (maintenir pour l'historique)" aria-label="Reculer">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <polyline points="15 18 9 12 15 6" fill="none" stroke="currentColor"
+                  stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <button class="nav-arrow nav-arrow-disabled" id="nav-forward" type="button"
+            title="Page suivante (maintenir pour l'historique)" aria-label="Avancer">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <polyline points="9 18 15 12 9 6" fill="none" stroke="currentColor"
+                  stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <div id="app">
+
+    <aside class="sidebar" id="sidebar">
+
+      <div class="logo">
+        <span class="logo-icon" aria-hidden="true">⛩️</span>
+        <div class="logo-texts">
+          <span class="logo-jp" lang="ja">アニメ</span>
+          <span class="logo-en">DOWNLOADER</span>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Navigation principale">
+        <a class="nav-item active" data-page="home" aria-label="Accueil">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </span>
+          <span class="nav-label">Accueil</span>
+        </a>
+        <a class="nav-item" data-page="favoris" aria-label="Favoris">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </span>
+          <span class="nav-label">Favoris</span>
+        </a>
+        <a class="nav-item" data-page="recherche" aria-label="Recherche">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </span>
+          <span class="nav-label">Recherche</span>
+        </a>
+        <a class="nav-item" data-page="telechargements" aria-label="Téléchargements">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </span>
+          <span class="nav-label">Téléchargements</span>
+          <span class="nav-badge hidden" id="dl-badge">0</span>
+        </a>
+        <a class="nav-item" data-page="librairie" aria-label="Librairie">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          </span>
+          <span class="nav-label">Librairie</span>
+        </a>
+        <a class="nav-item" id="nav-settings" data-page="parametres" aria-label="Paramètres">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </span>
+          <span class="nav-label">Paramètres</span>
+        </a>
+        <a class="nav-item" data-page="diag" aria-label="Diagnostic">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><polyline points="3 12 8 12 11 4 14 20 17 12 21 12"/></svg>
+          </span>
+          <span class="nav-label">Diagnostic</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-card" id="user-card">
+          <span class="user-avatar" id="user-avatar" aria-hidden="true">👤</span>
+          <div class="user-info">
+            <span class="user-name" id="user-name">Non connecté</span>
+            <span class="user-status" id="user-status">Cliquer pour se connecter</span>
+          </div>
+          <span id="user-status-dot" title="Non connecté" aria-hidden="true"></span>
+        </div>
+
+        <button class="btn-logout hidden" id="btn-logout" title="Se déconnecter" type="button">
+          <span aria-hidden="true">⏻</span> Déconnexion
+        </button>
+
+        <div class="sidebar-deco" aria-hidden="true">桜 · 夢 · 冒険</div>
+      </div>
+    </aside>
+
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <main class="main" id="main-content" tabindex="-1">
+
+      <section class="page active" id="page-home">
+
+        <header class="page-header">
+          <h1 class="page-title" id="home-greeting">Bienvenue</h1>
+          <div class="home-clock-wrap">
+            <span class="home-clock" id="home-clock">00:00</span>
+            <span class="home-date" id="home-date"></span>
+          </div>
+        </header>
+
+        <div class="hero fade-section">
+          <div class="hero-content">
+            <h2 class="hero-title">
+              Télécharge tes animes
+              <br>
+              <span class="hero-gradient">en quelques clics</span>
+            </h2>
+            <p class="hero-sub">
+              Connecte-toi à anime-sama.to pour accéder à tes favoris et télécharger tes épisodes.
+            </p>
+
+            <div class="hero-quote hidden" id="hero-quote">
+              <span class="hero-quote-text" id="hero-quote-text"></span>
+              <span class="hero-quote-author" id="hero-quote-author"></span>
+            </div>
+
+            <div class="hero-btns">
+              <button class="btn btn-ram hero-btn" id="hero-connect" type="button">⚡ Se connecter</button>
+              <button class="hero-nav-btn" id="hero-search" type="button">🔍 Rechercher</button>
+              <button class="hero-nav-btn" id="hero-dl" type="button">⬇️ Téléchargements</button>
+              <button class="hero-nav-btn" id="hero-lib" type="button">📁 Librairie</button>
+              <button class="hero-nav-btn" id="hero-settings-btn" type="button">⚙️ Paramètres</button>
+              <button class="hero-nav-btn" id="hero-diag" type="button">🩺 Diagnostic</button>
+            </div>
+          </div>
+
+          <div class="hero-chars" aria-hidden="true">
+            <div class="char-rem">Rem</div>
+            <div class="char-ram">Ram</div>
+          </div>
+        </div>
+
+        <div class="stats fade-section">
+          <button class="stat-card" id="stat-card-dl" title="Voir les téléchargements" type="button">
+            <span class="stat-icon" aria-hidden="true">⬇️</span>
+            <span class="stat-val" id="stat-dl">—</span>
+            <span class="stat-lbl">Téléchargés</span>
+          </button>
+          <button class="stat-card" id="stat-card-fav" title="Voir mes favoris" type="button">
+            <span class="stat-icon" aria-hidden="true">⭐</span>
+            <span class="stat-val" id="stat-fav">—</span>
+            <span class="stat-lbl">Favoris</span>
+          </button>
+          <button class="stat-card" id="stat-card-lib" title="Voir ma librairie" type="button">
+            <span class="stat-icon" aria-hidden="true">📁</span>
+            <span class="stat-val" id="stat-lib">—</span>
+            <span class="stat-lbl">En librairie</span>
+          </button>
+        </div>
+
+        <div class="home-block hidden fade-section" id="home-anime-du-jour">
+          <h3 class="home-section-title">🎌 Anime du jour</h3>
+          <div class="anime-du-jour-card" id="anime-du-jour-content"></div>
+        </div>
+
+        <div class="home-block hidden fade-section" id="home-session-bilan">
+          <h3 class="home-section-title">📊 Progression globale</h3>
+          <div class="bilan-card">
+            <div class="bilan-row">
+              <span class="bilan-label">Favoris téléchargés</span>
+              <span class="bilan-val" id="bilan-ratio">— / —</span>
+            </div>
+            <div class="progress-bar bilan-progress">
+              <div class="progress-fill" id="bilan-fill"></div>
+            </div>
+            <div class="bilan-row bilan-bottom">
+              <span class="bilan-sub" id="bilan-sub"></span>
+              <span class="bilan-pct" id="bilan-pct">0%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="home-block hidden fade-section" id="home-dl-widget">
+          <h3 class="home-section-title">⬇️ Téléchargement en cours</h3>
+          <div class="home-dl-card">
+            <div class="home-dl-row">
+              <span class="home-dl-title" id="home-dl-title">—</span>
+              <span class="home-dl-pct" id="home-dl-pct">0%</span>
+            </div>
+            <div class="progress-bar home-dl-bar">
+              <div class="progress-fill" id="home-dl-fill"></div>
+            </div>
+            <div class="home-dl-foot">
+              <span id="home-dl-sub">—</span>
+              <span id="home-dl-eta"></span>
+              <button class="home-dl-link" id="home-dl-voir-tout" type="button">Voir tout →</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="home-block hidden fade-section" id="home-shortcuts">
+          <h3 class="home-section-title">⚡ Accès rapide</h3>
+          <div class="shortcuts-grid">
+            <button class="shortcut-card" id="sc-btn-fav" type="button">
+              <span class="shortcut-icon" aria-hidden="true">⭐</span>
+              <span class="shortcut-label">Mes favoris</span>
+              <span class="shortcut-sub" id="sc-fav-count"></span>
+            </button>
+            <button class="shortcut-card" id="sc-btn-search" type="button">
+              <span class="shortcut-icon" aria-hidden="true">🔍</span>
+              <span class="shortcut-label">Rechercher</span>
+              <span class="shortcut-sub">Trouver un anime</span>
+            </button>
+            <button class="shortcut-card" id="sc-btn-dl" type="button">
+              <span class="shortcut-icon" aria-hidden="true">⬇️</span>
+              <span class="shortcut-label">Téléchargements</span>
+              <span class="shortcut-sub" id="sc-dl-count"></span>
+            </button>
+            <button class="shortcut-card" id="sc-btn-lib" type="button">
+              <span class="shortcut-icon" aria-hidden="true">📁</span>
+              <span class="shortcut-label">Ma librairie</span>
+              <span class="shortcut-sub" id="sc-lib-count"></span>
+            </button>
+            <button class="shortcut-card" id="sc-btn-diag" type="button">
+              <span class="shortcut-icon" aria-hidden="true">🩺</span>
+              <span class="shortcut-label">Diagnostic</span>
+              <span class="shortcut-sub" id="sc-diag-sub">État de l'application</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="home-block hidden fade-section" id="home-recent">
+          <div class="home-block-header">
+            <h3 class="home-section-title">🕐 Derniers téléchargements</h3>
+            <button class="home-block-link" id="home-recent-voir-tout" type="button">Tout voir →</button>
+          </div>
+          <div id="home-recent-grid" class="home-recent-grid"></div>
+        </div>
+
+        <div class="home-block hidden fade-section" id="home-meteo">
+          <h3 class="home-section-title">☀️ Session du jour</h3>
+          <div class="meteo-grid" id="meteo-grid"></div>
+        </div>
+
+        <div class="home-block hidden fade-section" id="home-raccourcis">
+          <h3 class="home-section-title">⌨️ Raccourcis</h3>
+          <div class="raccourcis-grid" id="home-raccourcis-content"></div>
+        </div>
+
+      </section>
+
+      <section class="page" id="page-favoris">
+        <header class="page-header">
+          <h1 class="page-title">Mes Favoris</h1>
+          <button class="btn btn-sm btn-ram" id="btn-refresh-fav" type="button">🔄 Actualiser</button>
+        </header>
+        <div class="anime-grid" id="favoris-grid">
+          <div class="empty-state">
+            <span class="empty-icon" aria-hidden="true">🌸</span>
+            <span>Connecte-toi pour voir tes favoris</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-recherche">
+        <header class="page-header">
+          <h1 class="page-title">Recherche</h1>
+        </header>
+        <div class="search-bar">
+          <div class="search-wrap">
+            <input
+              type="text"
+              id="search-input"
+              class="search-input"
+              placeholder="🔍  Chercher un anime..."
+              autocomplete="off"
+              aria-label="Chercher un anime"
+            />
+            <button id="search-clear" title="Effacer" aria-label="Effacer la recherche" type="button">✕</button>
+            <div class="search-suggestions hidden" id="search-suggestions"></div>
+          </div>
+          <button class="btn btn-ram" id="btn-search" type="button">Rechercher</button>
+        </div>
+        <div id="catalogue-bar" data-s="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0 2px">
+          <span data-s="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px">Parcourir</span>
+          <select id="cat-genre" class="search-input" data-s="max-width:210px;padding:6px 10px;font-size:12px" aria-label="Filtrer par genre">
+            <option value="">Tous les genres</option>
+          </select>
+          <div id="cat-types" data-s="display:flex;gap:5px;flex-wrap:wrap"></div>
+          <div id="cat-langues" data-s="display:flex;gap:5px;flex-wrap:wrap"></div>
+          <button id="cat-clear" type="button" data-s="display:none;margin-left:auto;font-size:11px;padding:5px 12px;border-radius:99px;background:var(--bg3);color:var(--muted);border:1px solid var(--border2);cursor:pointer;font-family:inherit">✕ Effacer</button>
+        </div>
+        <div class="anime-grid" id="search-grid"></div>
+      </section>
+
+      <section class="page" id="page-telechargements">
+        <header class="page-header">
+          <h1 class="page-title">Téléchargements</h1>
+        </header>
+
+        <div class="dl-layout">
+
+          <div class="dl-section">
+            <h2 class="section-title">En cours</h2>
+            <div id="dl-en-cours">
+              <div class="dl-empty">Aucun téléchargement actif</div>
+            </div>
+          </div>
+
+          <div class="dl-section">
+            <div class="dl-section-header">
+              <h2 class="section-title">File d'attente</h2>
+              <span class="dl-section-meta" id="dl-queue-summary"></span>
+            </div>
+            <div id="dl-queue"></div>
+          </div>
+
+          <div class="dl-section">
+            <div class="dl-section-header">
+              <h2 class="section-title">Historique</h2>
+              <div class="dl-section-actions">
+                <span class="dl-section-meta" id="dl-session-stats"></span>
+                <button class="btn btn-sm btn-ghost" id="dl-clear-history" type="button">🗑 Vider</button>
+              </div>
+            </div>
+            <div id="dl-history"></div>
+          </div>
+
+        </div>
+      </section>
+
+      <section class="page" id="page-librairie">
+        <header class="page-header">
+          <h1 class="page-title">Ma Librairie</h1>
+        </header>
+        <div id="lib-content">
+          <div class="empty-state">
+            <span class="empty-icon" aria-hidden="true">📭</span>
+            <span>Aucun anime téléchargé</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-parametres">
+        <header class="page-header set-largeur">
+          <h1 class="page-title">Paramètres</h1>
+          <div class="set-actions-top">
+            <span class="set-etat" id="settings-etat" role="status" aria-live="polite"></span>
+            <button class="btn btn-ghost btn-sm" id="settings-cancel" type="button">↺ Rétablir</button>
+            <button class="btn btn-ram btn-sm" id="settings-save" type="button">💾 Sauvegarder</button>
+          </div>
+        </header>
+
+        <form id="settings-form" class="set-page set-largeur">
+
+          <section class="set-groupe" role="group" aria-labelledby="set-titre-dl">
+            <h2 class="set-legende" id="set-titre-dl"><span class="set-legende-icone" aria-hidden="true">⬇️</span>Téléchargement</h2>
+
+            <div class="form-group">
+              <label for="set-qualite">Qualité vidéo</label>
+              <select id="set-qualite" class="search-input set-select">
+                <option value="auto">Auto (meilleure disponible)</option>
+                <option value="1080">1080p</option>
+                <option value="720">720p</option>
+                <option value="480">480p</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="set-threads">
+                Threads de téléchargement
+                <span class="set-thread-val" id="thread-val">16</span>
+              </label>
+              <input type="range" id="set-threads" class="set-range" min="1" max="32" value="16" />
+              <div class="set-range-foot">
+                <span>1 (lent)</span>
+                <span>32 (rapide)</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="set-groupe" role="group" aria-labelledby="set-titre-dossiers">
+            <h2 class="set-legende" id="set-titre-dossiers"><span class="set-legende-icone" aria-hidden="true">📁</span>Dossiers</h2>
+
+            <div class="form-group">
+              <label for="set-dldir">Dossier des animes</label>
+              <div class="set-dossier-ligne">
+                <input type="text" id="set-dldir" class="search-input"
+                       placeholder="Vide = dossier par défaut" />
+                <button type="button" class="btn btn-ghost btn-sm set-parcourir hidden"
+                        id="set-dldir-parcourir" data-cible="set-dldir">📂 Parcourir…</button>
+              </div>
+              <div class="set-help set-verdict" id="set-dldir-verdict" role="status" aria-live="polite"></div>
+            </div>
+
+            <div class="form-group">
+              <label for="set-scandir">Dossier des scans</label>
+              <div class="set-dossier-ligne">
+                <input type="text" id="set-scandir" class="search-input"
+                       placeholder="Vide = dossier par défaut" />
+                <button type="button" class="btn btn-ghost btn-sm set-parcourir hidden"
+                        id="set-scandir-parcourir" data-cible="set-scandir">📂 Parcourir…</button>
+              </div>
+              <div class="set-help set-verdict" id="set-scandir-verdict" role="status" aria-live="polite"></div>
+            </div>
+          </section>
+
+          <section class="set-groupe" role="group" aria-labelledby="set-titre-notifs">
+            <h2 class="set-legende" id="set-titre-notifs"><span class="set-legende-icone" aria-hidden="true">🔔</span>Notifications</h2>
+
+            <div class="form-group set-checkbox-row">
+              <input type="checkbox" id="set-notifs" class="set-checkbox" />
+              <label for="set-notifs">Notifications navigateur à la fin d'un téléchargement</label>
+            </div>
+
+            <div class="form-group set-checkbox-row">
+              <input type="checkbox" id="set-son" class="set-checkbox" />
+              <label for="set-son">Jouer un son quand un téléchargement se termine</label>
+            </div>
+          </section>
+
+          <section class="set-groupe" role="group" aria-labelledby="set-titre-comport">
+            <h2 class="set-legende" id="set-titre-comport"><span class="set-legende-icone" aria-hidden="true">⚙️</span>Comportement</h2>
+
+            <div class="form-group set-checkbox-row">
+              <input type="checkbox" id="set-skip" class="set-checkbox" />
+              <label for="set-skip">Ignorer les épisodes déjà téléchargés (recommandé)</label>
+            </div>
+
+            <div class="form-group set-checkbox-row">
+              <input type="checkbox" id="set-confirm" class="set-checkbox" />
+              <label for="set-confirm">Demander confirmation avant de supprimer un épisode</label>
+            </div>
+
+            <div class="form-group">
+              <label for="set-langue">Langue présélectionnée</label>
+              <select id="set-langue" class="search-input set-select">
+                <option value="VOSTFR">VOSTFR (par défaut)</option>
+                <option value="VF">VF</option>
+              </select>
+              <div class="set-help">Langue ouverte en premier dans la fiche d'un anime.</div>
+            </div>
+          </section>
+
+          <div class="form-error hidden" id="settings-error" role="alert"></div>
+        </form>
+
+        <div class="set-groupe set-compte set-largeur" role="group" aria-labelledby="set-titre-compte">
+          <h2 class="set-legende" id="set-titre-compte"><span class="set-legende-icone" aria-hidden="true">👤</span>Compte anime-sama</h2>
+
+          <div id="settings-user-section" class="set-user-section hidden">
+            <div class="set-user-card">
+              <div class="set-user-info">
+                <span class="set-user-icon" aria-hidden="true">👤</span>
+                <div>
+                  <div class="set-username" id="settings-username"></div>
+                  <div class="set-connected">✅ Connecté</div>
+                </div>
+              </div>
+              <button class="btn btn-sm set-logout-btn" id="settings-logout" type="button">⏻ Déconnexion</button>
+            </div>
+          </div>
+
+          <div id="settings-login-section" class="set-login-section hidden">
+            <button class="btn btn-ram set-connect-btn" id="settings-connect" type="button">⚡ Se connecter</button>
+          </div>
+
+          <div class="set-help">
+            🩺 <button type="button" class="set-link" id="settings-diag">Diagnostic de l'instance</button>
+            — santé, métriques &amp; logs
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-diag">
+        <header class="page-header">
+          <h1 class="page-title">Diagnostic</h1>
+          <div class="diag-toolbar">
+            <span class="diag-status" role="status" aria-live="polite">
+              <span class="diag-dot" id="diag-status-dot" aria-hidden="true"></span>
+              <span id="diag-status-text">…</span>
+            </span>
+            <span class="diag-meta" id="diag-last-update"></span>
+            <label class="diag-toggle" for="diag-log-level">journal
+              <select id="diag-log-level" class="diag-select">
+                <option value="">tous</option>
+                <option value="OK">ok+</option>
+                <option value="WARNING">warn+</option>
+                <option value="ERROR">erreur+</option>
+              </select>
+            </label>
+            <label class="diag-toggle" for="diag-auto">
+              <input type="checkbox" id="diag-auto" class="set-checkbox" checked> auto (15s)
+            </label>
+            <button class="btn btn-sm btn-ghost" id="diag-refresh" type="button">🔄 Actualiser</button>
+          </div>
+        </header>
+        <div class="diag-grid" id="diag-cards"></div>
+      </section>
+
+    </main>
+  </div>
+
+  <div class="modal hidden" id="modal-login" role="dialog" aria-modal="true" aria-labelledby="login-title">
+    <div class="modal-backdrop" id="login-backdrop"></div>
+    <div class="modal-box">
+      <button class="modal-close" id="login-close" aria-label="Fermer" type="button">✕</button>
+      <h2 id="login-title">🔑 Connexion anime-sama.to</h2>
+      <form id="login-form" autocomplete="on">
+        <div class="form-group">
+          <label for="login-pseudo">Pseudo</label>
+          <input type="text" id="login-pseudo" class="search-input" autocomplete="username" placeholder="ton pseudo" />
+        </div>
+        <div class="form-group">
+          <label for="login-password">Mot de passe</label>
+          <div class="champ-mdp">
+            <input type="password" id="login-password" class="search-input" autocomplete="current-password" placeholder="••••••••" />
+            <button type="button" class="mdp-bascule" id="login-password-voir"
+                    aria-label="Afficher le mot de passe" aria-pressed="false"
+                    title="Afficher le mot de passe">👁</button>
+          </div>
+        </div>
+      </form>
+      <div class="form-error hidden" id="login-error" role="alert"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="login-cancel" type="button">Annuler</button>
+        <button class="btn btn-ram" id="login-submit" type="button">⚡ Connexion</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modal-anime" role="dialog" aria-modal="true" aria-label="Fiche anime">
+    <div class="modal-backdrop" id="anime-backdrop"></div>
+    <div class="modal-box modal-wide">
+      <button class="modal-close" id="anime-close" aria-label="Fermer" type="button">✕</button>
+      <div id="modal-anime-content"></div>
+    </div>
+  </div>
+
+  <div id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
+
+  <script type="module" src="/dist/app.js"></script>
+
+</body>
+</html>

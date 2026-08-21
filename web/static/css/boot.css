@@ -1,0 +1,20 @@
+#boot-loader{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;
+  background:radial-gradient(120% 90% at 50% 32%,#0d0b1e 0%,#060510 72%);
+  transition:opacity .55s ease,visibility .55s ease}
+#boot-loader.boot-hide{opacity:0;visibility:hidden;pointer-events:none}
+.boot-inner{display:flex;flex-direction:column;align-items:center;gap:18px}
+.boot-logo{position:relative;width:88px;height:88px;display:grid;place-items:center}
+.boot-ring{position:absolute;inset:0;border-radius:50%;border:3px solid rgba(123,180,244,.12);
+  border-top-color:#4A8FE8;border-right-color:#8B5CF6;animation:bootspin 1s linear infinite}
+.boot-icon{font-size:36px;line-height:1;animation:bootpulse 1.9s ease-in-out infinite}
+.boot-title{font-family:'Syne','DM Sans',system-ui,sans-serif;font-size:27px;font-weight:800;
+  letter-spacing:3px;background:linear-gradient(135deg,#7BB4F4,#A78BFA,#FF82B8);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.boot-sub{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:#9590B5}
+.boot-bar{width:170px;height:3px;border-radius:3px;background:rgba(123,180,244,.10);overflow:hidden}
+.boot-bar i{display:block;height:100%;width:40%;border-radius:3px;
+  background:linear-gradient(90deg,#4A8FE8,#8B5CF6,#E8508A);animation:bootbar 1.25s cubic-bezier(.4,0,.2,1) infinite}
+@keyframes bootspin{to{transform:rotate(360deg)}}
+@keyframes bootpulse{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.12);opacity:1}}
+@keyframes bootbar{0%{transform:translateX(-130%)}100%{transform:translateX(330%)}}
+@media (prefers-reduced-motion:reduce){.boot-ring,.boot-icon,.boot-bar i{animation:none}}

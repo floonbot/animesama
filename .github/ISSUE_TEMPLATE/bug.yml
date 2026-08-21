@@ -1,0 +1,70 @@
+name: Bug
+description: Quelque chose ne marche pas comme prévu
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        L'application expose de quoi diagnostiquer sans deviner : la page **Diagnostic**
+        réunit l'état complet et le journal, avec un bouton d'export. Les deux champs
+        ci-dessous valent mieux que n'importe quelle description.
+
+        Aucun des deux ne contient de secret : les URLs sont expurgées et les cookies ne
+        sont jamais journalisés.
+
+  - type: textarea
+    id: quoi
+    attributes:
+      label: Ce qui se passe
+      description: Et ce que tu attendais à la place.
+      placeholder: |
+        Au lancement d'un téléchargement, la file reste bloquée sur « Interception du
+        stream… » et rien ne progresse. J'attendais que l'épisode démarre.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduire
+    attributes:
+      label: Comment le reproduire
+      placeholder: |
+        1. Chercher « ... »
+        2. Ouvrir la fiche, sélectionner la saison 1 en VOSTFR
+        3. Cliquer sur Télécharger
+    validations:
+      required: true
+
+  - type: textarea
+    id: health
+    attributes:
+      label: "État — `GET /api/health` ou export de la page Diagnostic"
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Journal — `GET /api/logs`, ou les lignes autour de l'erreur"
+      render: text
+    validations:
+      required: false
+
+  - type: dropdown
+    id: origine
+    attributes:
+      label: Où
+      options:
+        - Dans l'application
+        - Pendant l'installation (AnimeSama-Setup.exe)
+        - Pendant la compilation depuis les sources
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Système
+      placeholder: Windows 11 24H2
+    validations:
+      required: true
