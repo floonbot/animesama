@@ -1,4 +1,5 @@
 import { esc } from '../../utils/escape.js';
+import { majBadgeNouveautes } from '../../utils/badge-nouveautes.js';
 import { coverSrc } from '../../utils/cover.js';
 import { api } from '../../api.js';
 import { toast } from '../../components/toast.js';
@@ -62,6 +63,7 @@ export async function checkNouveauxEpisodes(forceRefresh = false) {
 
     const total = data.total_nouveaux || 0;
     const nonVerifies = data.non_verifies || 0;
+    majBadgeNouveautes(total);
 
     if (statEl) {
       if (total === 0 && nonVerifies > 0) {
@@ -173,6 +175,7 @@ export async function telechargerNouveauxEpisodes(nomAnime, btn) {
     if (card) card.classList.remove('lib-has-updates');
 
     const total = Object.values(state.updatesParAnime).reduce((s, a) => s + a.nouveaux_count, 0);
+    majBadgeNouveautes(total);
     const statEl = document.getElementById('lstat-nouveaux');
     if (statEl) {
       if (total === 0) {

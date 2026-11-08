@@ -1,11 +1,11 @@
-import hashlib
 import json
 import logging
 import os
 import threading
 from pathlib import Path
 
-from engine.config.settings import DATA_DIR, ROOT_DIR
+from engine.config.settings import DATA_DIR
+from engine.version import empreinte_installation
 
 log = logging.getLogger("engine.auth.storage")
 
@@ -22,9 +22,8 @@ _fernet_init_lock = threading.Lock()
 
 
 def _empreinte_installation(racine: Path | None = None) -> str:
-    # Le chemin est replie en casse : Windows ne distingue pas C:\Prog de c:\prog.
-    base = str(racine if racine is not None else ROOT_DIR)
-    return hashlib.sha256(base.casefold().encode("utf-8")).hexdigest()[:12]
+    # Une seule source : /api/health publie la meme, desktop.py la compare.
+    return empreinte_installation(racine)
 
 
 def _nom_par_installation(base: str, racine: Path | None = None) -> str:

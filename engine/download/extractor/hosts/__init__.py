@@ -1,4 +1,5 @@
 from engine.download.extractor.hosts import (  # noqa: F401
+    ansembed,
     doodstream,
     filemoon,
     lulustream,

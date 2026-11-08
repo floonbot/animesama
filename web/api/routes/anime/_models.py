@@ -9,3 +9,6 @@ class CoversBody(BaseModel):
 
 class TypesFavorisBody(BaseModel):
     urls: list[str] = Field(default_factory=list)
+
+class SanteReparerBody(BaseModel):
+    chemins: list[str] = Field(default_factory=list, max_length=5000)

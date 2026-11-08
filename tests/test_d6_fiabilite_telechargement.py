@@ -113,7 +113,13 @@ class _ProcFfmpeg:
 
 
 def _preparer_ffmpeg(monkeypatch, proc):
-    monkeypatch.setattr(ffmpeg_engine.subprocess, "Popen", lambda *a, **k: proc)
+    def _popen(cmd, *a, **k):
+        # Le faux ecrit la ou la commande le demande : dans le dossier de travail
+        # local, d'ou le moteur ne livre que le fichier valide.
+        proc._sortie = cmd[-1]
+        return proc
+
+    monkeypatch.setattr(ffmpeg_engine.subprocess, "Popen", _popen)
     monkeypatch.setattr(ffmpeg_engine, "_get_ffmpeg_path", lambda: "ffmpeg")
     monkeypatch.setattr(ffmpeg_engine, "_terminate_tree", lambda *a, **k: None)
     monkeypatch.setattr(ffmpeg_engine, "_spawn_proc_watchdog", lambda *a, **k: threading.Event())

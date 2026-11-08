@@ -44,7 +44,11 @@ let _typesDetectes = false;
 let _typesEnCours  = false;
 let _stateLoaded = false;
 
-const FAV_TYPES_KEY = 'fav_types_v4';
+// v5 : le serveur classait toute fiche « both » (les gabarits et les sections
+// en commentaire comptaient comme des panneaux). Relire la v4 garderait ce tri
+// faux sans jamais redemander.
+const FAV_TYPES_KEY = 'fav_types_v5';
+try { localStorage.removeItem('fav_types_v4'); } catch {}
 let _typesMap = {};
 try { _typesMap = JSON.parse(localStorage.getItem(FAV_TYPES_KEY)) || {}; } catch { _typesMap = {}; }
 function _saveTypes() { try { localStorage.setItem(FAV_TYPES_KEY, JSON.stringify(_typesMap)); } catch {} }
@@ -72,7 +76,8 @@ function _debounce(fn, ms) {
 // v3 : la charge utile porte les quatre listes du compte, pas les seuls
 // favoris. Un cache v2 relu tel quel masquerait les puces jusqu'a la
 // revalidation, tout etant compte comme favori.
-const FAV_CACHE_KEY = 'fav_cache_v3';
+// v4 : chaque anime y porte son type, faux en v3 (voir FAV_TYPES_KEY).
+const FAV_CACHE_KEY = 'fav_cache_v4';
 let _revalidating = false;
 
 // Normaliser a chaque frappe et par anime annulerait le gain du filtrage :

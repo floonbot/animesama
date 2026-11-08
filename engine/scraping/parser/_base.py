@@ -85,6 +85,37 @@ def _extraire_tableau_js(txt: str, start: int) -> str | None:
 
 _DROP_ARRAY = object()
 _RE_JS_LINE_COMMENT = re.compile(r'(?m)^[ \t]*//[^\n]*$')
+
+# Ce que le navigateur execute vraiment d'une fiche d'oeuvre. Le site y laisse
+# trois sortes de code mort qui ressemblent a des panneaux (releve le 07/11/2026) :
+# le commentaire de documentation commun (« panneauAnime("nom", ...) »), le gabarit
+# « /*panneauScan("nom", "url")*/ » de chaque section, et des sections entieres
+# desactivees par « <!-- MANGA ... --> » alors que leur appel est intact. Les
+# commentaires JS se retirent script par script : un « /* » perdu dans une chaine
+# (« image/* ») n'avale que son propre script. Un « <!-- » ouvert dans un script
+# n'est pas un commentaire HTML, d'ou une seule alternance, gauche d'abord.
+_RE_SCRIPT_OU_COMMENTAIRE_HTML = re.compile(
+    r"(<script\b[^>]*>)(.*?)(</script\s*>)|<!--.*?-->", re.I | re.S
+)
+_RE_COMMENTAIRE_BLOC_JS = re.compile(r"/\*.*?\*/", re.S)
+
+
+def _sans_code_mort(html: str) -> str:
+    def _garder(m: re.Match) -> str:
+        if m.group(1) is None:
+            return " "
+        js = _RE_COMMENTAIRE_BLOC_JS.sub(" ", m.group(2))
+        return m.group(1) + _RE_JS_LINE_COMMENT.sub("", js) + m.group(3)
+
+    return _RE_SCRIPT_OU_COMMENTAIRE_HTML.sub(_garder, html or "")
+
+
+# Un vrai panneau n'est jamais le gabarit : ni le libelle « nom », ni le chemin « url ».
+def _panneau_reel(libelle: str, chemin: str) -> bool:
+    chemin = (chemin or "").strip().strip("/")
+    return bool(chemin) and chemin.lower() != "url" and (libelle or "").strip().lower() != "nom"
+
+
 _RE_URL_ID_VIDE = re.compile(r'[-=/]\.\w+([?#]|$)')
 _RE_QUERY_ID_VIDE = re.compile(r'[?&](?:oid|id|videoid|video|watch)=(?:&|#|$)', re.I)
 

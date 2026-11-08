@@ -1,9 +1,12 @@
 
 import asyncio
+import contextvars
 import logging
 import os
 import time
 import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
 
 from engine.config.settings import DL_MAX_RETRIES, DL_RETRY_DELAY, get_downloads_dir
@@ -21,6 +24,12 @@ from engine.download._helpers import (
     skip_existants_actif as _skip_existants_actif,
 )
 from engine.download._host_breakers import get_breaker, host_disponible
+from engine.download._hotes_bloques import (
+    hote_bloque,
+    marquer_bloque,
+    sans_hotes_bloques,
+    sonder_blocage,
+)
 from engine.download._rate_limiter import (
     cooldown_global,
     domain_apply_penalty,
@@ -137,6 +146,11 @@ async def _extraire_et_telecharger(
     from engine.download.methods.nm3u8dl import nm3u8dl_download
     from engine.download.methods.ytdlp_engine import ytdlp_download
 
+    # Bloque en cours d'episode (le partage des lecteurs est fait avant) : le
+    # navigateur prendrait le meme refus.
+    lecteurs = sans_hotes_bloques(lecteurs)
+    if not lecteurs:
+        return None
     result = await _pipeline_playwright(lecteurs, ep_label, queue)
     if result:
         return await _lancer_download_pipeline(
@@ -159,12 +173,31 @@ def _bucket_sniff_autorise(lecteurs: list[dict[str, Any]]) -> list[dict[str, Any
 # Les moteurs et les gardes echouent loin du point ou le message est emis :
 # sans ce relais, `episode_done.erreur` affichait toujours "Aucune URL capturée",
 # quelle que soit la cause reelle (disque plein, blackhole DNS, moteurs a plat).
-_causes_echec: list[str] = []
+#
+# Une liste par cascade, portee par le contexte et non par le module : le
+# prechargement de l'episode suivant (DL_PREFETCH) tourne pendant la cascade en
+# cours, et ses lecteurs refuses finissaient dans le message de l'episode en
+# cours. Sa tache est creee avant la cascade : elle ne voit pas cette liste.
+# Les threads de asyncio.to_thread, eux, heritent du contexte, donc de la liste.
+_causes_en_cours: contextvars.ContextVar[list[str] | None] = contextvars.ContextVar(
+    "causes_echec", default=None
+)
+
+@contextmanager
+def _collecte_causes() -> Iterator[list[str]]:
+    causes: list[str] = []
+    jeton = _causes_en_cours.set(causes)
+    try:
+        yield causes
+    finally:
+        _causes_en_cours.reset(jeton)
 
 def _noter_cause(motif: str) -> None:
-    if motif and motif not in _causes_echec:
-        _causes_echec.append(motif)
-        del _causes_echec[:-5]
+    causes = _causes_en_cours.get()
+    if causes is None or not motif or motif in causes:
+        return
+    causes.append(motif)
+    del causes[:-5]
 
 def _resumer_causes(causes: list[str], limite: int = 400) -> str:
     """Toutes les causes, pas seulement la derniere.
@@ -212,9 +245,24 @@ async def _cascade_download(
     ep_label: str,
     queue,
 ) -> tuple[str | None, str]:
+    with _collecte_causes() as causes:
+        fichier, erreur = await _cascade_tentatives(
+            ytdlp_lecteurs, playwright_lecteurs, dossier, nom_ep, ep_label, queue
+        )
+    if not fichier and causes:
+        erreur = _resumer_causes(causes)
+    return fichier, erreur
+
+async def _cascade_tentatives(
+    ytdlp_lecteurs: list[dict[str, Any]],
+    playwright_lecteurs: list[dict[str, Any]],
+    dossier: str,
+    nom_ep: str,
+    ep_label: str,
+    queue,
+) -> tuple[str | None, str]:
     fichier = None
     erreur = "Aucune URL capturée"
-    _causes_echec.clear()
     politique = PolitiqueDebit()
 
     for tentative in range(1, RETRIES_EFFECTIFS + 1):
@@ -274,8 +322,6 @@ async def _cascade_download(
         if tentative < RETRIES_EFFECTIFS and not fichier:
             await asyncio.sleep(DELAI_RETRY_EFFECTIF)
 
-    if not fichier and _causes_echec:
-        erreur = _resumer_causes(_causes_echec)
     return fichier, erreur
 
 async def _essayer_prefetch(
@@ -425,6 +471,9 @@ async def _passe_ytdlp(
         if hote_throttle(domain):
             log.debug("%s: yt-dlp ignoré, hôte throttlé (%s)", ep_label, host)
             continue
+        if hote_bloque(domain):
+            log.debug("%s: yt-dlp ignoré, hôte bloqué pour cette connexion (%s)", ep_label, host)
+            continue
         motif = await asyncio.to_thread(_motif_url_refusee, src)
         if motif:
             log.warning("%s: lecteur refusé (%s) — %s", ep_label, host, motif)
@@ -482,6 +531,16 @@ async def _passe_ytdlp(
             continue
         except RateLimitError as exc:
             get_breaker(host)._on_failure(exc)
+            # Un refus de l'adresse IP n'est pas une limite de debit : ni
+            # penalite a attendre, ni « ban » qui declencherait la pause globale.
+            if await asyncio.to_thread(sonder_blocage, src):
+                marquer_bloque(domain)
+                _noter_cause(f"{host} refuse cette connexion (403 « administrative rules ») — "
+                             "écarté pour la session")
+                _safe_emit(queue, "episode_progress", {
+                    "pct": 0, "line": f"{host} refuse cette connexion → lecteur suivant…", "ep": ep_label,
+                })
+                continue
             domain_apply_penalty(domain)
             log.warning("%s: 403 on %s → penalty %.0fs, next player", ep_label, host, domain_penalty(domain))
             _safe_emit(queue, "episode_progress", {

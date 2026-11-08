@@ -4,8 +4,8 @@
   display: flex;
   flex-direction: column;
   background: linear-gradient(180deg,
-    rgba(13, 11, 30, .99) 0%,
-    rgba(6, 5, 16, .99) 100%);
+    rgba(13, 11, 30, .93) 0%,
+    rgba(6, 5, 16, .93) 100%);
   border-right: 1px solid var(--border);
   position: relative;
   overflow: hidden;

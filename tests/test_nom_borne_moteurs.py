@@ -83,10 +83,18 @@ def _cible_ytdlp(cmd):
     return cmd[cmd.index("--output") + 1].replace(".%(ext)s", ".mp4")
 
 
+def _ecriture_directe():
+    raise OSError("ecriture directe")
+
+
 def _neutraliser(monkeypatch, module):
     monkeypatch.setattr(module, "_spawn_proc_watchdog", lambda *a, **k: threading.Event())
     monkeypatch.setattr(module, "register_proc", lambda *a, **k: None)
     monkeypatch.setattr(module, "unregister_proc", lambda *a, **k: None)
+    # Ces tests visent l'analyse de la sortie des moteurs : ecriture directe.
+    # Le passage par un dossier local : test_ecriture_locale_puis_livraison.py.
+    if hasattr(module, "creer_dossier_de_travail"):
+        monkeypatch.setattr(module, "creer_dossier_de_travail", _ecriture_directe)
 
 
 def test_nm3u8dl_retrouve_le_fichier_ecrit_sous_le_nom_borne(

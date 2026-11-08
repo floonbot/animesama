@@ -7,6 +7,7 @@ import { VIEWS_KEY, _getNames, _getResume, _getViews } from './storage.js';
 import { state } from './state.js';
 import { getMissingBadge } from './missing.js';
 import { confirmSuppression } from './confirm.js';
+import { blocSynopsis, chargerSynopsis, remplirSynopsis } from '../../utils/synopsis.js';
 
 export function openNetflixModal(nom) {
   document.getElementById('modal-netflix-anime')?.remove();
@@ -55,6 +56,7 @@ export function openNetflixModal(nom) {
         <button type="button" class="modal-close lib-coin-hd" data-close aria-label="Fermer">✕</button>
       </div>
       <div class="netflix-modal-body">
+        ${blocSynopsis('netflix-synopsis')}
         ${anime.saisons.map(s => `
           <div class="lib-mb-20">
             <div class="lib-saison-title lib-mb-10">📁 ${esc(s.nom)} · ${s.episodes.length} ep${getMissingBadge(s)}</div>
@@ -92,6 +94,9 @@ export function openNetflixModal(nom) {
 
   document.body.appendChild(modal);
   modal.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', () => modal.remove()));
+
+  // Le nom de dossier suffit : le serveur retrouve la fiche comme « Nouveautes ».
+  chargerSynopsis({ nom: anime.nom }).then(t => remplirSynopsis(modal.querySelector('.netflix-synopsis'), t));
 
   const allEps = anime.saisons.flatMap(s => s.episodes);
 

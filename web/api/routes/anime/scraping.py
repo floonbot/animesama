@@ -45,6 +45,33 @@ async def get_episodes(url: str = Query(..., min_length=10, max_length=500)):
         log.error("get_episodes failed", exc_info=True)
         return {"titre": "", "episodes": [], "langues": [], "total": 0}
 
+@router.get("/synopsis")
+async def synopsis(
+    url: str = Query("", max_length=500),
+    nom: str = Query("", max_length=300),
+):
+    """Par l'URL de la fiche (favoris), ou par le nom de dossier (librairie)."""
+    from engine.scraping.synopsis import get_synopsis_async, url_pour_nom
+
+    if url:
+        if not _est_url_site(url):
+            raise HTTPException(status_code=400, detail="URL non autorisée")
+    elif nom.strip():
+        try:
+            url = await url_pour_nom(nom.strip())
+        except Exception:
+            log.debug("synopsis : fiche introuvable pour %s", nom[:60], exc_info=True)
+            url = ""
+        if not url:
+            return {"synopsis": "", "url": ""}
+    else:
+        raise HTTPException(status_code=400, detail="url ou nom requis")
+    try:
+        return {"synopsis": await get_synopsis_async(url), "url": url}
+    except Exception:
+        log.error("synopsis failed", exc_info=True)
+        return {"synopsis": "", "url": url}
+
 @router.get("/scan")
 async def scan_chapitres(
     slug: str = Query(..., min_length=1, max_length=200),

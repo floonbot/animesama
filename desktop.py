@@ -208,9 +208,26 @@ def main() -> None:
 
     deja_actif = server.wait_for_server(timeout=0.6)
     if deja_actif:
-        server.log.info("Serveur déjà en cours sur %s — la fenêtre s'y connecte", url)
-        pont._fenetre = webview.create_window(
-            TITRE, url, width=1280, height=860, min_size=(900, 600), js_api=pont,
+        from engine.version import empreinte_installation
+
+        if server.installation_en_ecoute() == empreinte_installation():
+            server.log.info("Serveur déjà en cours sur %s — la fenêtre s'y connecte", url)
+            pont._fenetre = webview.create_window(
+                TITRE, url, width=1280, height=860, min_size=(900, 600), js_api=pont,
+            )
+            webview.start()
+            return
+        # Le port est commun aux sources, au build et a l'application installee
+        # (lancee au demarrage de Windows si l'option est cochee) : s'y brancher
+        # montrait l'ancien paquet a qui croyait tester ses sources.
+        message = (
+            f"Le port {PORT} est déjà pris par une autre installation d'Anime-Sama "
+            "ou par un autre programme. Ferme-la, ou lance celle-ci sur un autre port "
+            "avec la variable PORT (par exemple PORT=7844)."
+        )
+        server.log.error(message)
+        webview.create_window(
+            TITRE, html=_page_erreur(message), width=1280, height=860, min_size=(900, 600),
         )
         webview.start()
         return

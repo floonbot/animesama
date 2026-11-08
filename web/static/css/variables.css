@@ -21,8 +21,8 @@
   --bg4:         #1C193A;
   --bg5:         #242048;
 
-  --surface-glass:    rgba(13, 11, 30, .78);
-  --surface-glass-2:  rgba(20, 18, 40, .85);
+  --surface-glass:    rgba(13, 11, 30, .75);
+  --surface-glass-2:  rgba(20, 18, 40, .82);
   --surface-blur:     blur(10px) saturate(140%);
 
   --border:        rgba(123, 180, 244, .07);

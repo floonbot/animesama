@@ -206,7 +206,7 @@ def test_ytdlp_download_aria2c_active_wires_command(tmp_path, monkeypatch):
 
     captured = {}
 
-    def _fake_construire(exe, url, dossier, nom, headers, qualite, aria2c=None):
+    def _fake_construire(exe, url, dossier, nom, headers, qualite, aria2c=None, travail=None):
         captured["aria2c"] = aria2c
         captured["qualite"] = qualite
         return [exe, url]
@@ -235,7 +235,7 @@ def test_ytdlp_download_settings_exception_uses_default_quality(tmp_path, monkey
 
     captured = {}
 
-    def _fake_construire(exe, url, dossier, nom, headers, qualite, aria2c=None):
+    def _fake_construire(exe, url, dossier, nom, headers, qualite, aria2c=None, travail=None):
         captured["qualite"] = qualite
         return [exe, url]
 

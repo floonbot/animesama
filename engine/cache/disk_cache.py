@@ -11,7 +11,7 @@ from engine.config.settings import DATA_DIR
 log = logging.getLogger("engine.cache.disk_cache")
 
 class DiskCache:
-    def __init__(self, name: str, ttl: float, cap: int = 300) -> None:
+    def __init__(self, name: str, ttl: float, cap: int = 300, version: str = "") -> None:
         self._ttl = ttl
         self._cap = cap
         self._dir = DATA_DIR / "cache"
@@ -19,6 +19,13 @@ class DiskCache:
         self._json_path = self._dir / f"{name}.json"
         self._lock = threading.Lock()
         self._conn: sqlite3.Connection | None = None
+        # Une entree depend souvent du code qui l'a produite. Changer `version`
+        # rend invisibles d'un coup les entrees de l'ancien code : elles
+        # expirent ensuite d'elles-memes, sans fichier orphelin a nettoyer.
+        self._prefixe = f"{version}|" if version else ""
+
+    def _cle(self, key: str) -> str:
+        return self._prefixe + key
 
     def _connexion(self) -> sqlite3.Connection | None:
         if self._conn is not None:
@@ -137,6 +144,7 @@ class DiskCache:
             log.debug("éviction impossible (%s) : %s", self._path.name, e)
 
     def get(self, key: str):
+        key = self._cle(key)
         with self._lock:
             conn = self._connexion()
             if conn is None:
@@ -176,7 +184,7 @@ class DiskCache:
                 return
             now = time.time()
             try:
-                lignes = [(k, now, json.dumps(v)) for k, v in items.items()]
+                lignes = [(self._cle(k), now, json.dumps(v)) for k, v in items.items()]
             except (TypeError, ValueError) as e:
                 log.debug("valeur non sérialisable ignorée (%s) : %s", self._path.name, e)
                 return
@@ -198,7 +206,9 @@ class DiskCache:
             if conn is None:
                 return
             try:
-                conn.executemany("DELETE FROM cache WHERE key = ?", [(k,) for k in keys])
+                conn.executemany(
+                    "DELETE FROM cache WHERE key = ?", [(self._cle(k),) for k in keys]
+                )
                 conn.commit()
             except sqlite3.DatabaseError as e:
                 log.debug("suppression cache impossible (%s) : %s", self._path.name, e)

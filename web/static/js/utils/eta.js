@@ -58,8 +58,17 @@ let _points = [];        // { t, pct } de l'épisode en cours
 let _debutEpisode = 0;
 let _pollueParPause = false;
 let _enCours = false;
+// Dans un anime : vrai du premier épisode jusqu'à ce que la file se vide, y
+// compris ENTRE deux épisodes. Sans lui, la pause entre deux épisodes (3 s, et
+// jusqu'à 33 s d'anti-ban mesurées le 07/11/2026) effaçait le reste de l'anime.
+let _dansAnime = false;
 let _index = 0;
 let _total = 1;
+// Un échantillon couvre un cycle entier : du début d'un épisode au début du
+// suivant (ou à la fin de la file). Mesuré du début à la fin du seul épisode, il
+// oubliait la pause qui suit — l'estimation restait d'autant trop basse
+// (rejeu d'un vrai téléchargement : -35 s constants sur 4 min).
+let _cycle = null;       // { debut, valide } de l'épisode terminé, en attente
 
 function _lire() {
   try {
@@ -72,7 +81,18 @@ function _ecrire(liste) {
   try { localStorage.setItem(CLE_DUREES, JSON.stringify(liste.slice(-MAX_ECHANTILLONS))); } catch {}
 }
 
+function _clore() {
+  const c = _cycle;
+  _cycle = null;
+  if (!c || !c.valide) return;
+  const s = Math.round((Date.now() - c.debut) / 1000);
+  if (s < ECHANTILLON_MIN_S || s > ECHANTILLON_MAX_S) return;
+  _ecrire([..._lire(), s]);
+}
+
 export function demarrerEpisode(d) {
+  _clore();
+  _dansAnime = true;
   _points = [];
   _debutEpisode = Date.now();
   _pollueParPause = false;
@@ -82,6 +102,10 @@ export function demarrerEpisode(d) {
 }
 
 export function noterProgression(pct) {
+  // Une ligne a 0 % n'est qu'une annonce (« lecteur suivant », « Anti-ban :
+  // pause… » emise APRES la fin d'un episode) : elle ne doit pas rouvrir un
+  // episode fantome, compte en plus dans le reste de l'anime.
+  if (!_enCours && !(Number(pct) > 0)) return;
   if (!_enCours) {
     // Une progression sans démarrage : l'onglet a été ouvert alors qu'un
     // téléchargement tournait déjà. Mieux vaut estimer depuis maintenant que
@@ -104,28 +128,29 @@ export function noterProgression(pct) {
 export function signalerPause(enPause) {
   if (!enPause) return;
   _pollueParPause = true;
+  if (_cycle) _cycle.valide = false;
   _points = [];        // l'avancement reprendra sa mesure à la reprise
 }
 
 export function terminerEpisode(reussi) {
-  const debut = _debutEpisode;
-  const pollue = _pollueParPause;
+  // Les sauts n'ont pas d'episode_start : sans épisode ouvert, rien à clore.
+  if (_enCours) {
+    _cycle = { debut: _debutEpisode, valide: !!reussi && !_pollueParPause && !!_debutEpisode };
+  }
   _points = [];
   _debutEpisode = 0;
   _pollueParPause = false;
   _enCours = false;
-  if (!reussi || pollue || !debut) return;
-
-  const s = Math.round((Date.now() - debut) / 1000);
-  if (s < ECHANTILLON_MIN_S || s > ECHANTILLON_MAX_S) return;
-  _ecrire([..._lire(), s]);
 }
 
+/** La file ne télécharge plus rien : fin de l'anime (et du cycle en attente). */
 export function arreterEpisode() {
+  _clore();
   _points = [];
   _debutEpisode = 0;
   _pollueParPause = false;
   _enCours = false;
+  _dansAnime = false;
 }
 
 function _vitessePctParS() {
@@ -152,10 +177,7 @@ export function resteEpisodeS() {
 
 export function dureeMedianeEpisodeS() {
   const e = _lire();
-  if (!e.length) return DUREE_SUPPOSEE_S;
-  const tri = [...e].sort((a, b) => a - b);
-  const m = Math.floor(tri.length / 2);
-  return tri.length % 2 ? tri[m] : Math.round((tri[m - 1] + tri[m]) / 2);
+  return e.length ? _mediane(e) : DUREE_SUPPOSEE_S;
 }
 
 export function estMesuree() {
@@ -167,7 +189,25 @@ export function nbEchantillons() {
 }
 
 export function episodesRestantsItemCourant() {
-  return _enCours ? Math.max(0, _total - _index - 1) : 0;
+  return _dansAnime ? Math.max(0, _total - _index - 1) : 0;
+}
+
+/**
+ * Recale la position dans l'anime sur l'etat de la file : une interface
+ * ouverte en plein telechargement n'a pas vu passer `episode_start` et se
+ * croyait au premier et dernier episode.
+ */
+export function synchroniserFile(statut) {
+  const c = statut && statut.en_cours;
+  if (!c || c.index_episode == null || !Number.isFinite(Number(c.index_episode))) return;
+  _index = Number(c.index_episode);
+  _total = Math.max(1, Number(c.nb_episodes) || 1);
+  _dansAnime = true;
+}
+
+/** Secondes avant la fin de l'anime en cours (sans le reste de la file). */
+export function resteAnimeS() {
+  return resteTotalS(0);
 }
 
 /**
@@ -177,8 +217,33 @@ export function episodesRestantsItemCourant() {
 export function resteTotalS(episodesEnFile = 0) {
   const mediane = dureeMedianeEpisodeS();
   const reste = resteEpisodeS();
-  const courant = reste == null ? (_enCours ? mediane : 0) : reste;
+  const courant = reste == null ? (_enCours ? _resteSansMesure(mediane) : 0) : reste;
   return courant + (episodesRestantsItemCourant() + Math.max(0, episodesEnFile)) * mediane;
+}
+
+// Avant le premier pourcentage, l'episode cherche encore son flux (lecteurs,
+// interception) : mesure le 07/11/2026, 25 a 70 s sur 95, sans un seul
+// pourcentage. On decompte depuis le debut de l'episode avec la mediane
+// CONDITIONNELLE : parmi les durees deja observees qui depassent le temps
+// ecoule, la mediane, moins ce temps. Passe 30 s, un episode de 27 s n'est plus
+// plausible — la mediane brute, elle, le comptait encore et annoncait trop peu
+// (rejeu d'un vrai telechargement : 36 % d'erreur avec la mediane figee, 52 %
+// en la decomptant, voir tests-e2e/temps-restant.spec.js). Le plancher evite
+// d'annoncer « 0 s » quand l'episode depasse tout ce qu'on a vu.
+const PLANCHER_SANS_MESURE = 0.1;
+
+function _mediane(liste) {
+  const tri = [...liste].sort((a, b) => a - b);
+  const m = Math.floor(tri.length / 2);
+  return tri.length % 2 ? tri[m] : Math.round((tri[m - 1] + tri[m]) / 2);
+}
+
+function _resteSansMesure(mediane) {
+  const ecoule = _debutEpisode ? (Date.now() - _debutEpisode) / 1000 : 0;
+  const durees = _lire();
+  const plusLongues = durees.length ? durees.filter(d => d > ecoule) : [DUREE_SUPPOSEE_S].filter(d => d > ecoule);
+  if (!plusLongues.length) return mediane * PLANCHER_SANS_MESURE;
+  return Math.max(mediane * PLANCHER_SANS_MESURE, _mediane(plusLongues) - ecoule);
 }
 
 export function fmtReste(s) {

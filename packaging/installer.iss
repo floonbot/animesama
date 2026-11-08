@@ -75,6 +75,12 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopico
 ; au demarrage suivant, sur un exe qui n'existe plus.
 Name: "{userstartup}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: startupicon
 
+[Registry]
+; Declaree par l'application a sa premiere notification Windows
+; (engine/utils/notifications.py) : l'installeur ne la cree pas, il la
+; retire seulement, pour ne pas laisser un AUMID orphelin dans HKCU.
+Root: HKCU; Subkey: "Software\Classes\AppUserModelId\AnimeSama.Desktop"; Flags: uninsdeletekey dontcreatekey
+
 [Run]
 Filename: "{tmp}\MicrosoftEdgeWebview2Setup.exe"; Parameters: "/silent /install"; StatusMsg: "Installation du composant d'affichage Microsoft Edge WebView2..."; Check: WebView2Missing; Flags: waituntilterminated
 Filename: "{app}\{#AppExe}"; Description: "Lancer {#AppName}"; Flags: nowait postinstall skipifsilent

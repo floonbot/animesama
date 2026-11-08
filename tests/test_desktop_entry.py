@@ -7,7 +7,12 @@ import desktop
 
 
 def _stub_server(monkeypatch, *, deja_actif: bool) -> None:
+    from engine.version import empreinte_installation
+
     monkeypatch.setattr(desktop.server, "wait_for_server", lambda *a, **k: deja_actif)
+    monkeypatch.setattr(
+        desktop.server, "installation_en_ecoute", lambda *a, **k: empreinte_installation()
+    )
     monkeypatch.setattr(desktop.server, "_verifier_static_dir", lambda *a, **k: True)
     monkeypatch.setattr(desktop.server, "purger_logs_nm3u8dl", lambda *a, **k: None)
     monkeypatch.setattr(desktop.server, "start_server", lambda *a, **k: None)

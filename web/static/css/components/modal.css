@@ -12,7 +12,7 @@
 .modal-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(3, 2, 12, .82);
+  background: rgba(3, 2, 12, .79);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
   backdrop-filter: blur(14px) saturate(160%);
   animation: backdropIn .22s var(--ease) both;
@@ -30,6 +30,9 @@
   max-width: 480px;
   max-height: 92vh;
   overflow-y: auto;
+  /* Le halo ::after deborde de 60 px a droite : sans cela, le focus d'un bouton
+     ou Maj+molette faisait glisser tout le contenu hors de son padding. */
+  overflow-x: hidden;
   padding: var(--space-8);
   background: linear-gradient(155deg,
     rgba(20, 17, 44, .99) 0%,
@@ -235,6 +238,45 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+/* Synopsis (utils/synopsis.js) : fiche des favoris et fiche de la librairie */
+.synopsis { margin-bottom: var(--space-4); }
+.synopsis[hidden] { display: none; }
+.synopsis-texte {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--text-soft);
+  white-space: pre-line;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+}
+.synopsis-texte.synopsis-ouvert {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+}
+.synopsis-plus {
+  margin-top: 4px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--rem-light);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  cursor: pointer;
+}
+.synopsis-plus[hidden] { display: none; }
+.synopsis-plus:hover { text-decoration: underline; }
+.anime-synopsis .synopsis-texte { text-shadow: 0 1px 8px rgba(0, 0, 0, .6); }
+.netflix-synopsis {
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
 @media (max-width: 600px) {
   .anime-hero-content { flex-direction: column; align-items: center; text-align: center; }
   .anime-hero-meta { justify-content: center; }

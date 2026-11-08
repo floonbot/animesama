@@ -6,10 +6,15 @@ from engine.scraping.parser._base import (
     _STRAINER_A,
     _attr_str,
     _make_soup,
+    _panneau_reel,
+    _sans_code_mort,
     log,
 )
 
 _RE_SCAN = re.compile(r"/scan(\d*)/")
+_RE_APPEL_PANNEAU = re.compile(
+    r'panneau(Anime|Scan)\(\s*"((?:[^"\\]|\\.)*)"\s*,\s*"((?:[^"\\]|\\.)*)"\s*\)', re.I
+)
 
 # Le compte anime-sama tient quatre listes ; get-data.php les nomme en toutes
 # lettres, pas comme les onglets de /profil (`fav`, `watch`, `vu`, `histo`).
@@ -121,9 +126,24 @@ def detecter_type_contenu(html: str) -> dict:
     if not html:
         return {"has_anime": False, "has_scan": False}
 
-    has_anime = "panneauAnime(" in html
-    has_scan = "panneauScan(" in html
-    if has_anime or has_scan:
+    # Les definitions « function panneauScan(nom, url) » et les gabarits sont sur
+    # toutes les fiches : chercher le nom dans le HTML brut classait chaque favori
+    # « both » (243 sur 243 chez l'utilisateur), et le filtre Animes/Scans ne
+    # triait plus rien. Seuls comptent les appels que le navigateur execute.
+    has_anime = has_scan = False
+    for m in _RE_APPEL_PANNEAU.finditer(_sans_code_mort(html)):
+        if not _panneau_reel(m.group(2), m.group(3)):
+            continue
+        if m.group(1).lower() == "anime":
+            has_anime = True
+        else:
+            has_scan = True
+        if has_anime and has_scan:
+            break
+    # Une fiche qui porte le systeme de panneaux a dit ce qu'elle contient, meme
+    # « rien » : ses liens de saison sont fabriques par ce JS, absents du HTML.
+    # La lecture des liens reste pour l'ancienne mise en page.
+    if has_anime or has_scan or "panneauAnime(" in html or "panneauScan(" in html:
         return {"has_anime": has_anime, "has_scan": has_scan}
 
     soup = _make_soup(html, parse_only=_STRAINER_A)

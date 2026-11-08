@@ -130,7 +130,7 @@ def test_health_breakers_lists_open_and_half_open(monkeypatch):
     )
     out = asyncio.run(health())
     b = out["breakers"]
-    assert set(b) == {"open", "half_open"}
+    assert set(b) == {"open", "half_open", "bloques"}
     assert b["open"] == ["down.tld"]
     assert b["half_open"] == ["probing.tld"]
     assert "fine.tld" not in b["open"]
@@ -142,7 +142,7 @@ def test_health_breakers_empty_when_all_closed(monkeypatch):
 
     monkeypatch.setattr(hb, "etat_breakers", lambda: {"a.tld": "closed"})
     out = asyncio.run(health())
-    assert out["breakers"] == {"open": [], "half_open": []}
+    assert out["breakers"] == {"open": [], "half_open": [], "bloques": []}
 
 
 def test_health_breakers_block_survives_error(monkeypatch):

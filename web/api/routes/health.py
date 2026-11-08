@@ -82,10 +82,13 @@ def _health_engines() -> dict | None:
 def _health_breakers() -> dict | None:
     try:
         from engine.download._host_breakers import etat_breakers
+        from engine.download._hotes_bloques import hotes_bloques
         etats = etat_breakers()
         return {
             "open": sorted(h for h, s in etats.items() if s == "open"),
             "half_open": sorted(h for h, s in etats.items() if s == "half_open"),
+            # Refus de l'adresse IP (403 « administrative rules ») : ecartes 6 h.
+            "bloques": hotes_bloques(),
         }
     except Exception:
         log.debug("health: breakers", exc_info=True)

@@ -19,7 +19,7 @@ Pipeline multi-moteurs · extraction avancée · lecteur intégré · file temps
 
 <br>
 
-<img src="web/static/img/image.png" width="100%" alt="Accueil"/>
+<img src="docs/capture-telechargements.png" width="100%" alt="Page Téléchargements"/>
 
 </div>
 
@@ -49,7 +49,11 @@ cible n'a **rien à installer**.
 ### 🔍 Recherche & navigation
 - Recherche en direct sur Anime-Sama, chargement dynamique des épisodes
 - Gestion des saisons et des langues (VOSTFR / VF…)
-- Favoris synchronisés, filtrés par type (**Animés** / **Scans**) + cache anti-spam réseau
+- Favoris synchronisés, filtrés par type (**Animés** / **Scans**) + cache anti-spam réseau.
+  Le type se lit dans les panneaux que la fiche exécute vraiment : gabarits et sections
+  mises en commentaire par le site ne comptent pas
+- **Synopsis** de l'œuvre dans la fiche des favoris et dans celle de la librairie (replié
+  sur quatre lignes, « Voir plus »), gardé une semaine en cache
 
 ### ⬇️ Téléchargement multi-moteurs
 Le pipeline essaie les moteurs dans cet ordre, en s'arrêtant au premier qui aboutit
@@ -87,6 +91,7 @@ stratégie (yt-dlp ou interception) et ses `--extractor-args`.
 
 | Hôte | Domaines | Stratégie | Flux |
 |---|---|---|---|
+| **ansembed** | `ansembed.net` | yt-dlp | HLS — lecteur propre au site (vidmoly à sa marque), m3u8 en clair dans la page ; premier hébergeur servi (relevé du 08/11/2026 : 57 œuvres sur 60) |
 | **sibnet** | `sibnet.ru` | yt-dlp natif | MP4 direct (Referer/Origin forcés) |
 | **vidmoly** | `vidmoly.to/.me/.net/.biz` | interception | HLS via lecteur JS (Referer vidmoly) |
 | **sendvid** | `sendvid.com` | yt-dlp natif | MP4 + HLS de secours |
@@ -104,7 +109,7 @@ stratégie (yt-dlp ou interception) et ses `--extractor-args`.
 | **streamwish** | `streamwish.*`, `embedwish.com`, `*wish.pro`… | yt-dlp | HLS (Referer streamwish) |
 | **swishclone** | `dingtezuni.com`, `minochinos.com`, `movearnpre.com`… | interception | HLS (clone StreamWish, domaines tournants) |
 
-Un dix-septième module, `oneupload`, reste au dépôt mais ses domaines figurent dans
+Un dix-huitième module, `oneupload`, reste au dépôt mais ses domaines figurent dans
 `HOSTS_MORTS` ([`settings.py`](engine/config/settings.py)) : l'hébergeur est hors service
 et les lecteurs qui le désignent sont ignorés d'office.
 
@@ -127,6 +132,14 @@ breaker par hôte** isole les hôtes en panne (`/api/download/breakers`).
 ### 📚 Librairie & lecteur
 - Lecteur vidéo intégré (reprise de lecture, raccourcis clavier, épisode suivant/précédent)
 - Vue liste **et** vue « Netflix », détection des épisodes manquants, stats, export CSV
+- **🩺 Santé** : repère ce que le lecteur intégré ne lira pas et le répare à la demande —
+  flux MPEG-TS sous une extension `.mp4` (convertis sans réencodage, date d'origine
+  conservée), `.MUX` jamais renommés, restes de téléchargement, MP4 tronqués (décochés par
+  défaut : les supprimer impose de les retélécharger). Chaque fichier est revérifié juste
+  avant d'être touché ; ceux modifiés depuis moins d'une heure sont laissés de côté
+- **Veille des nouveaux épisodes** en arrière-plan (toutes les 1 à 24 h, réglable) :
+  pastille sur l'onglet Librairie, notification Windows, et en option mise en file
+  automatique pour les animes de la watchlist. Chaque épisode n'est signalé qu'une fois
 - Historique de téléchargements **persistant** (SQLite)
 
 ### ⚡ Temps réel & observabilité
@@ -230,6 +243,11 @@ l'application (serveur local **http://127.0.0.1:7843** + webview). Fermer la fen
 arrête proprement le serveur : le téléchargement en cours est préservé pour reprise, le
 navigateur Playwright est fermé.
 
+Si le port est déjà pris — typiquement par l'application installée, qui se lance au
+démarrage de Windows quand l'option est cochée —, la fenêtre ne s'y branche que si c'est
+la même installation. Sinon elle le dit et s'arrête : ferme l'autre, ou lance les sources
+sur un autre port (`$env:PORT = "7844"` dans PowerShell, puis `python desktop.py`).
+
 Pour lancer le serveur seul (sans fenêtre) — `server.py` n'a pas de point d'entrée
 `__main__` :
 
@@ -251,10 +269,23 @@ Les trois doivent passer **sans aucune erreur** avant chaque commit. Lance aussi
 `pytest -q -p no:randomly` : une pollution d'état entre tests a déjà existé sur ce projet
 et n'était visible qu'en ordre alphabétique.
 
+**Écrire un test.** Un test décrit un comportement qui casserait pour l'utilisateur, pas une
+branche : son nom le dit, et sa docstring raconte le cas réel quand il y en a un. Les
+fichiers `*_branch_cov.py` / `*_remainder.py` hérités portent mal leur nom — mesuré le
+6 novembre 2026 sur 94 d'entre eux, 52 couvrent des branches que rien d'autre ne couvre, et
+les autres vérifient souvent un scénario que la couverture ne voit pas (course à l'annulation,
+ordre d'écriture, options des scripts de build) : on ne les supprime pas sur leur nom.
+Remplacer une fonction privée par un faux fige sa signature — dix-neuf faux ont cassé pour
+un seul paramètre ajouté : préfère `lambda *a, **k: …`, ou mieux l'API publique.
+
 Les tests E2E Playwright (`tests-e2e/`) se lancent avec `npm run test:e2e` ; ils démarrent
 le serveur eux-mêmes (voir [`playwright.config.js`](playwright.config.js)). Si le port
 7843 est déjà pris par une instance installée, passe `PORT=7851` pour tester contre un
 serveur isolé.
+
+Pour lancer le paquet sans surveillance (tests automatisés), `ANIMESAMA_NO_DIALOG=1` retire
+les boîtes de dialogue natives d'échec au démarrage, qui attendraient sinon un clic : l'erreur
+reste dans la fenêtre et dans le journal.
 
 ---
 
@@ -306,7 +337,13 @@ vérifie que `pyproject.toml` et `installer.iss` ne divergent pas.
 
 ## ⚙️ Configuration
 
-Tout est optionnel — l'app démarre avec des valeurs par défaut. Copie `.env.example` en `.env` pour personnaliser :
+Tout est optionnel — l'app démarre avec des valeurs par défaut. Copie `.env.example` en `.env` pour personnaliser.
+
+Le `.env` est lu à côté de ce qui tourne : à la racine du dépôt pour les sources, à côté
+d'`AnimeSama.exe` (`%LOCALAPPDATA%\Programs\AnimeSama\`) pour l'application installée, qui
+n'en livre pas. Une option posée seulement dans le `.env` du dépôt fait donc diverger les
+sources du paquet : un essai ou une mesure faits depuis les sources ne vaudraient plus pour
+l'application installée.
 
 | Variable | Rôle (défaut) |
 |---|---|
@@ -331,8 +368,34 @@ Chrome sans fenêtre — **exactement l'exécutable du mode visible**, donc rien
 voit l'hébergeur. Si un hébergeur se met à refuser le sniff, `BROWSER_HEADLESS=false` rend les
 fenêtres à l'identique.
 
+**Réglages avancés** — rarement utiles, lus de la même façon :
+
+| Variable | Rôle (défaut) |
+|---|---|
+| `DL_ABANDON_LENT` | abandonne un lecteur qui bride au profit du suivant, seulement s'il en reste un (activé ; `0` le coupe) |
+| `DL_DEBIT_PLANCHER_MO_S` / `DL_DEBIT_PLAFOND_MO_S` | bornes du seuil de débit qui déclenche cet abandon (`0.8` / `3.0` Mo/s) |
+| `DL_DEBIT_FRACTION_REF` | le seuil vaut cette fraction du meilleur débit déjà obtenu de l'hôte (`0.25`), entre les deux bornes |
+| `DL_DEBIT_DEMARRAGE_S` / `DL_DEBIT_FENETRE_S` | attente avant de juger le débit (`25` s), durée de la fenêtre de mesure (`45` s) |
+| `DL_DEBIT_RESTE_MIN_S` | on ne coupe que s'il resterait au moins cette durée à ce rythme (`600` s) |
+| `DL_DEBIT_MAX_ABANDONS` | abandons pour lenteur au plus, par épisode (`2`) |
+| `DL_EXTRACT_IFRAME` | charge le lecteur dans une iframe sandboxée pendant l'interception (désactivé ; `1` l'active) |
+| `DOMAIN_DELAYS_JSON` | délai minimal entre deux accès, par domaine, en JSON (`{"vidmoly.net": 6}`), ajouté aux valeurs intégrées |
+| `YTDLP_EXTRA_DOMAINS` | domaines à confier d'abord à yt-dlp, liste JSON (`["exemple.com"]`) |
+| `HOSTS_MORTS_EXTRA` | domaines d'hébergeurs hors service à ignorer, liste JSON |
+| `HOST_DOMAIN_REWRITES_JSON` | réécrit un domaine de lecteur vers un autre, en JSON (`{"vidmoly.to": "vidmoly.net"}`) |
+| `SITE_URL` / `SITE_DOMAIN` | adresse du site source (`https://anime-sama.to`), le domaine en est déduit — utile si le site change d'adresse |
+| `COVERS_BASE` | base des adresses de jaquettes (`https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu`) |
+| `ANILIST_COHERENCE` | vérification de la cohérence des saisons auprès d'AniList (activée ; `0` la coupe) |
+| `HTTP_ASYNC` | client HTTP asynchrone (httpx) pour le site, au lieu de requests (désactivé ; `1` l'active) |
+| `YTDLP_INSECURE` | **désactive la vérification des certificats** de yt-dlp — diagnostic seulement |
+| `ANIMESAMA_NO_YTDLP_UPDATE` | coupe la mise à jour automatique de yt-dlp au démarrage des sources ; le paquet ne se met jamais à jour seul |
+| `ANIMESAMA_DATA_DIR` | déplace tout le dossier `data/` (défaut : à côté des sources ou de l'exe) ; la suite de tests s'en sert pour ne pas toucher aux vraies données |
+| `NO_COLOR` | journal console sans couleurs |
+| `PLAYWRIGHT_BROWSERS_PATH` | emplacement de Chromium ; le paquet pointe d'office sur le sien quand la variable est absente |
+
 `data/user_settings.json` (réglé depuis l'interface) couvre qualité, threads, dossiers,
-notifications, confirmations et langue par défaut. Les fichiers sensibles (`auth.json`,
+notifications, confirmations, langue par défaut et veille des nouveautés
+(`veille_nouveautes`, `veille_intervalle_h`, `veille_auto_dl`). Les fichiers sensibles (`auth.json`,
 `cookies.enc`, réglages, base SQLite) restent **locaux** et sont git-ignorés.
 
 ### 🔐 Modèle de sécurité (local)
@@ -383,6 +446,31 @@ jusqu'à 2 minutes et affiche le décompte. Si elle abandonne, le message donne 
 conservés). Un échec fréquent est la limite GitHub de 60 téléchargements anonymes par
 heure : réessaie plus tard.
 
+**Dossier de téléchargement sur un NAS ou un partage réseau.**
+Les moteurs écrivent d'abord dans le dossier temporaire local (`%TEMP%`), puis déposent le
+fichier fini dans le dossier de téléchargement. Sur un partage SMB, ffmpeg échoue en fin de
+course quand il réécrit le fichier pour le rendre lisible en streaming (« Error writing
+trailer: Invalid argument », « Postprocessing: Conversion failed! ») : le travail local
+l'évite. Prévois donc un peu de place dans `%TEMP%`, de l'ordre d'un épisode (~1 Go).
+
+**Aucune notification Windows n'apparaît.**
+Les notifications partent du serveur, par le centre de notifications de Windows : dans
+l'application, WebView2 refuse d'office l'API web `Notification`. Si Windows les masque
+(Paramètres Windows › Système › Notifications, réglage global ou propre à « AnimeSama »),
+la page Paramètres l'indique sous la case « Notifications ». La pastille de l'onglet
+Librairie et les messages dans l'application, eux, ne dépendent pas de Windows.
+
+**Un épisode de la librairie ne se lit pas dans l'application (VLC le lit).**
+C'est souvent un flux MPEG-TS enregistré sous une extension `.mp4` : le lecteur intégré
+(Chromium) ne lit pas ce format. Librairie › **🩺 Santé** le convertit en vrai MP4 sans
+réencodage.
+
+**La page Diagnostic indique qu'un hébergeur « refuse ta connexion ».**
+L'hébergeur bloque ton adresse IP (réponse « 403 Request forbidden by administrative rules »,
+observée sur `video.sibnet.ru`). Ce n'est pas une limite de débit : l'application l'écarte
+pendant six heures, sans pénalité ni pause anti-ban, et passe aux autres lecteurs. Rien à
+réparer de ton côté, sinon changer de connexion (VPN) si tu tiens à cet hébergeur.
+
 **Un hébergeur passe en « dégradé » ou son disjoncteur s'ouvre.**
 Normal quand un hôte limite le débit ou tombe. La cascade bascule sur les autres lecteurs
 de l'épisode. Voir la page Diagnostic, cartes « Succès par hôte » et « Disjoncteurs hôtes ».
@@ -414,11 +502,11 @@ engine/                  Le moteur — 100 % indépendant du web
   download/              queue (SQLite) · worker · pipeline · moteurs (nm3u8dl/yt-dlp/ffmpeg) · interception
   cache/                 covers, cache d'images, cache disque TTL
   auth/                  connexion Anime-Sama, session, keepalive
-  library/               scan de la librairie, nouveautés, cohérence des saisons
+  library/               scan de la librairie, nouveautés et veille, cohérence des saisons, santé des fichiers
   observability/         métriques, journal circulaire, expurgation des secrets
   config/                settings, logging, réglages utilisateur
   domain/                exceptions du domaine
-  utils/                 sécurité (SSRF), pinning DNS, helpers asyncio
+  utils/                 sécurité (SSRF), pinning DNS, helpers asyncio, notifications Windows
   services/              couche service (download_service)
   version.py             version applicative + identité du paquet construit
 

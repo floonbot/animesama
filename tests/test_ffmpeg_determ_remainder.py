@@ -7,6 +7,16 @@ import pytest
 from engine.download.methods import ffmpeg_engine
 
 
+@pytest.fixture(autouse=True)
+def _ecriture_directe(monkeypatch):
+    # Ces tests visent l'analyse de la sortie de ffmpeg : ecriture directe.
+    # Le passage par un dossier local : test_ecriture_locale_puis_livraison.py.
+    def _sans_dossier_de_travail():
+        raise OSError("ecriture directe")
+
+    monkeypatch.setattr(ffmpeg_engine, "creer_dossier_de_travail", _sans_dossier_de_travail)
+
+
 class _ListPipe:
     def __init__(self, items):
         self._items = list(items)

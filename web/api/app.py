@@ -214,7 +214,17 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         log.warning(f"Démarrage navigateur : {e}")
 
+    try:
+        from engine.library.veille import demarrer as demarrer_veille
+        app.state._veille = demarrer_veille()
+    except Exception as e:
+        log.warning(f"Veille des nouveautés : {e}")
+
     yield
+
+    veille = getattr(app.state, "_veille", None)
+    if veille is not None:
+        veille.cancel()
 
     try:
         import asyncio as _asyncio
@@ -230,6 +240,13 @@ async def lifespan(app: FastAPI):
         await _asyncio.sleep(0.1)
     except Exception as e:
         log.debug(f"[shutdown] cancel worker : {e}")
+    try:
+        # Hors du registre des telechargements : « Arreter » la file ne doit pas
+        # couper une conversion de la librairie, mais la fermeture de l'app, si.
+        from engine.library.sante import annuler_reparation
+        annuler_reparation()
+    except Exception as e:
+        log.debug(f"[shutdown] sante : {e}")
     try:
         from engine.download.methods._proc_registry import kill_all_processes
         n = kill_all_processes()

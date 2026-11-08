@@ -227,6 +227,27 @@ def wait_for_server(timeout=10, on_attente=None, arret=None):
                     log.debug("wait_for_server: callback d'attente en échec", exc_info=True)
             time.sleep(0.05)
 
+def installation_en_ecoute(timeout: float = 2.0) -> str:
+    """Empreinte de l'installation qui repond sur le port ; "" si inconnue.
+
+    "" couvre aussi bien un paquet d'avant ce champ qu'un autre programme : dans
+    les deux cas, ce n'est pas a cette fenetre de s'y brancher.
+    """
+    import json
+    import urllib.request
+
+    from engine.config.settings import HOST, PORT
+    # Sans proxy : celui du systeme intercepterait sinon la boucle locale.
+    ouvreur = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        with ouvreur.open(f"http://{HOST}:{PORT}/api/health", timeout=timeout) as r:
+            data = json.loads(r.read(1_000_000))
+    except (OSError, ValueError):
+        return ""
+    build = data.get("build") if isinstance(data, dict) else None
+    valeur = build.get("installation") if isinstance(build, dict) else None
+    return valeur if isinstance(valeur, str) else ""
+
 def restore_session():
     try:
         from engine.auth.manager import auth_manager

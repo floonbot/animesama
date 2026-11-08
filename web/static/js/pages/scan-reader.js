@@ -10,7 +10,7 @@ const WIDTH_KEY = 'scan_reader_width';
 const DIR_KEY = 'scan_reader_dir';
 const BR_KEY = 'scan_reader_bright';
 
-const BG_IMAGE = '/img/ChatGPT%20Image%207%20juin%202026%2C%2022_51_33.png';
+const BG_IMAGE = '/img/fond-lecteur-scans.png';
 
 function _num(key, def, lo, hi) {
   const v = parseFloat(localStorage.getItem(key));
@@ -70,7 +70,7 @@ export function openReader({
   modal.style.cssText =
     'position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;' +
     'align-items:stretch;justify-content:flex-start;padding:0;max-width:none;background-color:#070c16;' +
-    `background-image:linear-gradient(rgba(8,13,24,.62),rgba(5,9,17,.78)),url('${BG_IMAGE}');` +
+    `background-image:linear-gradient(rgba(8,13,24,.59),rgba(5,9,17,.75)),url('${BG_IMAGE}');` +
     'background-size:cover;background-position:center;background-attachment:fixed;' +
 
     `--rw:${width}%;--br:${bright}`;

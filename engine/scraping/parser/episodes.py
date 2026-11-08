@@ -1,3 +1,4 @@
+import html as _html
 import re
 
 from bs4 import BeautifulSoup
@@ -11,6 +12,8 @@ from engine.scraping.parser._base import (
     _attr_str,
     _extraire_eps_arrays,
     _make_soup,
+    _panneau_reel,
+    _sans_code_mort,
     log,
 )
 
@@ -22,16 +25,37 @@ _RE_SECTION_OU_PANNEAU = re.compile(
 _RE_TAGS_H2 = re.compile(r"<[^>]+>")
 
 
+# Fiche refondue (releve le 07/11/2026) : <h2 class="oe-h2">Synopsis</h2> puis
+# <p id="synopsisText" class="oe-replie">...</p>, replie par le site avec un
+# bouton « Voir plus ».
+_RE_SYNOPSIS = re.compile(
+    r"""<p\b[^>]*\bid\s*=\s*["']synopsisText["'][^>]*>(.*?)</p\s*>""", re.I | re.S
+)
+_RE_BR = re.compile(r"<br\s*/?>", re.I)
+_SYNOPSIS_MAX = 4000
+
+
+def parse_synopsis(html: str) -> str:
+    m = _RE_SYNOPSIS.search(html or "")
+    if not m:
+        return ""
+    texte = _html.unescape(_RE_TAGS_H2.sub("", _RE_BR.sub("\n", m.group(1))))
+    lignes = (" ".join(ligne.split()) for ligne in texte.splitlines())
+    return "\n".join(ligne for ligne in lignes if ligne)[:_SYNOPSIS_MAX]
+
+
 def parse_panneaux(html: str) -> list[dict]:
     brut: list[tuple[str, str, str, str]] = []
     section = ""
-    for m in _RE_SECTION_OU_PANNEAU.finditer(html or ""):
+    # Lu comme un appel, le commentaire de documentation de la fiche renommait la
+    # saison 1 en « nom » et faisait prefixer toutes les autres de « Anime - ».
+    for m in _RE_SECTION_OU_PANNEAU.finditer(_sans_code_mort(html)):
         if m.group(1) is not None:
             section = _RE_TAGS_H2.sub("", m.group(1)).strip()
             continue
-        path = (m.group(3) or "").strip().strip("/")
-        if not path or path.lower() == "url":
+        if not _panneau_reel(m.group(2), m.group(3) or ""):
             continue
+        path = m.group(3).strip().strip("/")
         parts = path.split("/")
         seg = parts[0].strip()
         if not seg:

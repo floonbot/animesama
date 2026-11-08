@@ -339,12 +339,15 @@ function render(health, metr, logs, lib) {
   const br = (health && health.breakers) || {};
   const brOpen = br.open || [];
   const brHalf = br.half_open || [];
+  const brBloques = br.bloques || [];
   const brBody = [];
-  if (!brOpen.length && !brHalf.length) {
+  if (!brOpen.length && !brHalf.length && !brBloques.length) {
     brBody.push(el('div', { class: 'k' }, ['Tous fermés — aucun hôte coupé.']));
   } else {
     if (brOpen.length) brBody.push(row('Ouverts (coupés)', brOpen.join(', '), 'ko'));
     if (brHalf.length) brBody.push(row('Semi-ouverts (test)', brHalf.join(', '), 'warn'));
+    // L'hebergeur refuse cette adresse IP : rien a reparer cote application.
+    if (brBloques.length) brBody.push(row('Refusent ta connexion', brBloques.join(', '), 'ko'));
   }
   cards.appendChild(card('Disjoncteurs hôtes', brBody));
 

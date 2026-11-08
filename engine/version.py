@@ -11,6 +11,7 @@ depot, et sans horodatage de build rien ne distingue un paquet d'avant-hier d'un
 paquet du jour.
 """
 
+import hashlib
 import json
 import logging
 import sys
@@ -23,6 +24,20 @@ log = logging.getLogger("engine.version")
 APP_VERSION = "2.0.0"
 
 TAMPON_NOM = "build-info.json"
+
+
+def empreinte_installation(racine: Path | None = None) -> str:
+    """Distingue les installations d'une meme machine : 12 hex du chemin.
+
+    Sources, dossier de build et application installee partagent trousseau,
+    %TEMP% et port. Le chemin est replie en casse, comme Windows. Ce calcul
+    nomme aussi les cles du trousseau : le changer rendrait illisible le
+    cookies.enc deja sur disque.
+    """
+    from engine.config.settings import ROOT_DIR
+
+    base = str(racine if racine is not None else ROOT_DIR)
+    return hashlib.sha256(base.casefold().encode("utf-8")).hexdigest()[:12]
 
 
 def chemin_tampon() -> Path:
@@ -69,6 +84,8 @@ def identite_build() -> dict[str, Any]:
         "front": tampon.get("front") or "",
         "git": tampon.get("git") or "",
         "python": tampon.get("python") or "",
+        # Lu par desktop.py pour ne se brancher que sur sa propre installation.
+        "installation": empreinte_installation(),
     }
 
 

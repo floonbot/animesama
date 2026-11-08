@@ -22,7 +22,11 @@ SEARCH_MAX_LEN = 200
 
 _types_cache: dict[str, str] = {}
 _types_cache_lock = threading.Lock()
-_TYPES_FILE = DATA_DIR / "scan_types_v5.json"
+# v6 : detecter_type_contenu lit les appels executes, plus le HTML brut ; la v5
+# classait chaque fiche « both ». Changer le nom a chaque changement de verdict,
+# sinon les types deja connus ne seraient jamais redemandes.
+_TYPES_FILE = DATA_DIR / "scan_types_v6.json"
+_TYPES_PERIMES = ("scan_types_v5.json",)
 _TYPES_MAX = 5000
 _types_loaded = False
 
@@ -32,6 +36,11 @@ def _load_types_cache() -> None:
         if _types_loaded:
             return
         _types_loaded = True
+        for nom in _TYPES_PERIMES:
+            try:
+                (_TYPES_FILE.parent / nom).unlink(missing_ok=True)
+            except OSError as e:
+                log.debug(f"scan_types perime {nom}: {e}")
         try:
             if _TYPES_FILE.exists():
                 with open(_TYPES_FILE, encoding="utf-8") as f:

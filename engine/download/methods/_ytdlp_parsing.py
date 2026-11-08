@@ -40,18 +40,25 @@ def construire_commande(
     headers: dict[str, str],
     qualite: str = "auto",
     aria2c: str | None = None,
+    travail: str | None = None,
 ) -> list[str]:
     headers = headers or {}
     ua = safe_header(headers.get("user-agent") or DEFAULT_USER_AGENT)
     referer = safe_header(headers.get("referer") or headers.get("origin") or "")
     cookie = safe_header(headers.get("cookie") or "")
     nom = borner_nom_fichier(dossier, nom, ".mp4")
-    sortie = os.path.join(dossier, nom + ".%(ext)s")
+    if travail:
+        # Telechargement et corrections dans `travail` (local), puis yt-dlp deplace
+        # le resultat dans `dossier`. Sa correction HLS ajoute +faststart, qui
+        # echoue sur un partage SMB. -P n'agit qu'avec un --output relatif.
+        sortie = ["-P", f"home:{dossier}", "-P", f"temp:{travail}", "--output", nom + ".%(ext)s"]
+    else:
+        sortie = ["--output", os.path.join(dossier, nom + ".%(ext)s")]
 
     cmd = [
         exe,
         url,
-        "--output", sortie,
+        *sortie,
         "--merge-output-format", "mp4",
         "--no-part",
         # Jamais reprendre un fichier deja sur le disque : avec --no-part, un

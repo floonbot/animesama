@@ -4,6 +4,7 @@ import { toast } from './components/toast.js';
 import { api } from './api.js';
 import * as eta from './utils/eta.js';
 import { SUJET_LIBRAIRIE, signalerChangement } from './utils/vue-live.js';
+import { majBadgeNouveautes } from './utils/badge-nouveautes.js';
 
 // Vider le cache HTTP ne redessine rien : la vue qui regarde la librairie
 // pendant un telechargement doit apprendre que son contenu a bouge.
@@ -111,7 +112,6 @@ function connect() {
     if (d.skipped)     { toast(`⏭ ${d.ep || d.nom} déjà présent`, 'info'); }
     else if (d.succes) {
       toast(`✅ ${d.ep || d.nom} téléchargé !`, 'success');
-      sendNotif('✅ Téléchargement terminé', d.ep || d.nom || '');
       _invalidateLib();
     }
     else { toast(`❌ ${d.ep || d.nom} : ${d.erreur || 'échoué'}`, 'error', 6000); }
@@ -123,8 +123,20 @@ function connect() {
     stopTimer();
     const msg = `🎌 ${d.titre} — ${d.succes} ✅ ${d.echoues ? d.echoues + ' ❌' : ''} ${d.skipped ? d.skipped + ' ⏭' : ''}`;
     toast(msg.trim(), d.echoues ? 'error' : 'success', 6000);
-    sendNotif('🎌 Anime terminé', `${d.titre} — ${d.succes} épisodes téléchargés`);
     _invalidateLib();
+  });
+
+  // Veille du serveur (engine/library/veille.py) : seuls les episodes jamais
+  // signales arrivent ici ; total_en_attente compte aussi les anciens.
+  es.addEventListener('nouveautes', e => {
+    const d = _parse(e.data);
+    if (!d) return;
+    majBadgeNouveautes(d.total_en_attente);
+    if (!d.total) return;
+    const noms = (d.animes || []).slice(0, 3).map(a => `${a.nom} (${a.nouveaux})`).join(', ');
+    const fin = d.en_file ? ` — ${d.en_file} ajouté${d.en_file > 1 ? 's' : ''} au téléchargement` : '';
+    toast(`🆕 ${d.total} nouvel${d.total > 1 ? 's' : ''} épisode${d.total > 1 ? 's' : ''} : ${noms}${fin}`, 'info', 8000);
+    window.dispatchEvent(new CustomEvent('nouveautes', { detail: d }));
   });
 
   es.addEventListener('dl_annule', e => {
@@ -151,18 +163,6 @@ function connect() {
     _relayerEtat(true);
     hideOfflineBanner();
   });
-}
-
-function sendNotif(titre, corps) {
-  if (!('Notification' in window)) return;
-  if (Notification.permission === 'granted') {
-    // Un carre de 256 : bg-dark.png etait un fond de 1536x1024 et 2 Mo, que
-    // Windows ecrasait dans une vignette.
-    try { new Notification(titre, { body: corps, icon: '/img/notif.png' }); }
-    catch {}
-  } else if (Notification.permission !== 'denied') {
-    Notification.requestPermission();
-  }
 }
 
 function showOfflineBanner(msg) {

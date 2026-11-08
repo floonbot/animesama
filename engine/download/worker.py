@@ -292,6 +292,9 @@ async def _traiter_episode(item: dict[str, Any], queue) -> None:
                 _pf = asyncio.ensure_future(prefetch_extraction(eps[i + 1], queue))
                 _pf_tasks.add(_pf)
                 _pf.add_done_callback(_pf_tasks.discard)
+            # Lu par l'interface rouverte en cours de route : sans lui, elle ne
+            # sait pas combien d'episodes de l'anime restent a telecharger.
+            item["index_episode"] = i
             result = await _executer_un_episode(ep, i, total, titre, queue)
             if result is None:
                 break

@@ -16,7 +16,9 @@ from engine.download._engine_utils import (
     NO_WINDOW_FLAGS,
     borner_nom_fichier,
     clean_subprocess_env,
+    creer_dossier_de_travail,
     finaliser_process,
+    livrer,
 )
 from engine.download._engine_utils import (
     est_url_http as _est_url_http,
@@ -180,23 +182,31 @@ def ffmpeg_download(
     nom = borner_nom_fichier(dossier, nom, ".mp4")
     sortie = os.path.join(dossier, nom + ".mp4")
 
-    cmd = _construire_commande(exe, url, sortie, headers or {})
-
     log.info(f"[ffmpeg] Téléchargement last resort : {nom}")
     log.debug(f"[ffmpeg] URL : {redact_url(url)}")
     log.debug("[ffmpeg] Options : reconnect=1, threads=0, stream-copy")
-
-    duree_totale_s = _estimer_duree_hls(url, headers or {})
 
     proc = None
     watchdog = None
     state = _ProgressState()
     taille_avant = _taille_ou_none(sortie)
     chemin_valide: str | None = None
+    travail: str | None = None
 
     stdout_ready = threading.Event()
 
     try:
+        # +faststart reecrit le fichier en fin de mux, ce qu'un partage SMB refuse :
+        # on ecrit en local et on ne livre que le fichier valide (voir livrer).
+        # Cree dans le try : le finally le retire quoi qu'il arrive ensuite.
+        try:
+            travail = creer_dossier_de_travail()
+        except OSError as e:
+            log.debug(f"[ffmpeg] dossier de travail local indisponible ({e}) — écriture directe")
+        ecriture = os.path.join(travail, "video.mp4") if travail else sortie
+        cmd = _construire_commande(exe, url, ecriture, headers or {})
+        duree_totale_s = _estimer_duree_hls(url, headers or {})
+
         proc = subprocess.Popen(
             cmd,
             stdin=subprocess.DEVNULL,
@@ -255,7 +265,11 @@ def ffmpeg_download(
         if cancelled and cancelled[0]:
             raise DownloadCancelled()
 
-        chemin_valide = _valider_sortie_ffmpeg(proc, sortie, nom, callback)
+        valide = _valider_sortie_ffmpeg(proc, ecriture, nom, callback)
+        if valide and travail:
+            livrer(valide, sortie)
+            valide = sortie
+        chemin_valide = valide
         return chemin_valide
 
     except RuntimeError:
@@ -278,6 +292,8 @@ def ffmpeg_download(
         if chemin_valide is None:
             _supprimer_sortie_incomplete(sortie, taille_avant)
         _purger_si_trop_petit(sortie, TAILLE_MIN_FICHIER)
+        if travail:
+            shutil.rmtree(travail, ignore_errors=True)
         unregister_proc(proc)
 
 def _estimer_duree_hls(url: str, headers: dict[str, str]) -> float:

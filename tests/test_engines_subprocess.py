@@ -72,10 +72,18 @@ class FakePopenFactory:
         return self.proc
 
 
+def _ecriture_directe():
+    raise OSError("ecriture directe")
+
+
 def _neutralize(monkeypatch, module):
     monkeypatch.setattr(module, "_spawn_proc_watchdog", lambda *a, **k: threading.Event())
     monkeypatch.setattr(module, "register_proc", lambda *a, **k: None)
     monkeypatch.setattr(module, "unregister_proc", lambda *a, **k: None)
+    # Ces tests visent l'analyse de la sortie des moteurs : ecriture directe.
+    # Le passage par un dossier local : test_ecriture_locale_puis_livraison.py.
+    if hasattr(module, "creer_dossier_de_travail"):
+        monkeypatch.setattr(module, "creer_dossier_de_travail", _ecriture_directe)
 
 
 @pytest.fixture(autouse=True)
@@ -98,7 +106,7 @@ def test_ytdlp_success_returns_file_and_reports_progress(tmp_path, monkeypatch):
     monkeypatch.setattr(ytdlp_engine.subprocess, "Popen", factory)
     monkeypatch.setattr(ytdlp_engine, "_get_ytdlp_path", lambda: "yt-dlp")
     monkeypatch.setattr(ytdlp_engine, "_get_aria2c_path", lambda: None)
-    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n: str(final))
+    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n, avant=None: str(final))
     _neutralize(monkeypatch, ytdlp_engine)
 
     import engine.config.user_settings as user_settings
@@ -122,7 +130,7 @@ def test_ytdlp_failure_returns_none(tmp_path, monkeypatch):
     monkeypatch.setattr(ytdlp_engine.subprocess, "Popen", factory)
     monkeypatch.setattr(ytdlp_engine, "_get_ytdlp_path", lambda: "yt-dlp")
     monkeypatch.setattr(ytdlp_engine, "_get_aria2c_path", lambda: None)
-    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n: None)
+    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n, avant=None: None)
     _neutralize(monkeypatch, ytdlp_engine)
 
     import engine.config.user_settings as user_settings
@@ -140,7 +148,7 @@ def test_ytdlp_403_raises_ratelimit(tmp_path, monkeypatch):
     monkeypatch.setattr(ytdlp_engine.subprocess, "Popen", factory)
     monkeypatch.setattr(ytdlp_engine, "_get_ytdlp_path", lambda: "yt-dlp")
     monkeypatch.setattr(ytdlp_engine, "_get_aria2c_path", lambda: None)
-    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n: None)
+    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n, avant=None: None)
     _neutralize(monkeypatch, ytdlp_engine)
 
     import engine.config.user_settings as user_settings
@@ -184,7 +192,7 @@ def test_ytdlp_cancellation_raises(tmp_path, monkeypatch):
     monkeypatch.setattr(ytdlp_engine.subprocess, "Popen", factory)
     monkeypatch.setattr(ytdlp_engine, "_get_ytdlp_path", lambda: "yt-dlp")
     monkeypatch.setattr(ytdlp_engine, "_get_aria2c_path", lambda: None)
-    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n: None)
+    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n, avant=None: None)
     monkeypatch.setattr(ytdlp_engine, "_terminate_tree", lambda p: None)
     _neutralize(monkeypatch, ytdlp_engine)
 
@@ -433,7 +441,7 @@ def test_engines_spawn_in_new_session_for_group_kill(tmp_path, monkeypatch):
     monkeypatch.setattr(ytdlp_engine.subprocess, "Popen", yt_factory)
     monkeypatch.setattr(ytdlp_engine, "_get_ytdlp_path", lambda: "yt-dlp")
     monkeypatch.setattr(ytdlp_engine, "_get_aria2c_path", lambda: None)
-    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n: str(yt_final))
+    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n, avant=None: str(yt_final))
     _neutralize(monkeypatch, ytdlp_engine)
     ytdlp_engine.ytdlp_download("http://host/v", str(tmp_path), "ep")
     assert yt_factory.kwargs.get("start_new_session") is True

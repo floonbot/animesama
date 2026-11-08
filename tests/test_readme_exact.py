@@ -80,7 +80,9 @@ def test_les_variables_d_environnement_citees_sont_lues_quelque_part():
 
 
 def test_les_hotes_du_tableau_existent_dans_le_registre():
-    tableau = README[README.index("| **sibnet**"):README.index("Un dix-septième module")]
+    # Du titre du tableau a la phrase sur oneupload : ni l'ordre des lignes ni
+    # le rang ecrit en toutes lettres (« dix-huitieme ») ne doivent compter.
+    tableau = README[README.index("| Hôte | Domaines"):README.index("module, `oneupload`, reste au dépôt")]
     cites = set(re.findall(r"\|\s*\*\*([a-z0-9]+)\*\*", tableau))
     modules = {
         p.stem for p in (ROOT / "engine" / "download" / "extractor" / "hosts").glob("*.py")

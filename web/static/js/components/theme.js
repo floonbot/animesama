@@ -1,12 +1,12 @@
 const BG_IMAGES = {
-  home:            '/img/bg-dark.webp',
-  favoris:         '/img/favoris-dark.webp',
-  recherche:       '/img/search-dark.webp',
-  telechargements: '/img/download-dark.webp',
-  librairie:       '/img/library-dark.webp',
-  parametres:      '/img/settings-dark.webp',
-  diag:            '/img/diag-dark.webp',
-  default:         '/img/bg-dark.webp',
+  home:            '/img/fond-accueil.webp',
+  favoris:         '/img/fond-favoris.webp',
+  recherche:       '/img/fond-recherche.webp',
+  telechargements: '/img/fond-telechargements.webp',
+  librairie:       '/img/fond-librairie.webp',
+  parametres:      '/img/fond-parametres.webp',
+  diag:            '/img/fond-diagnostic.webp',
+  default:         '/img/fond-accueil.webp',
 };
 
 export function setPage(page) {

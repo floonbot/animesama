@@ -1,6 +1,7 @@
 import { esc } from '../utils/escape.js';
 import { coverSrc } from '../utils/cover.js';
 import { etiquetteSaison } from '../utils/etiquette.js';
+import { blocSynopsis, chargerSynopsis, remplirSynopsis } from '../utils/synopsis.js';
 import { api }   from '../api.js';
 import { toast } from '../components/toast.js';
 
@@ -17,6 +18,7 @@ function _heroSkeleton(anime) {
           <div class="anime-hero-meta">
             ${anime.statut ? `<span class="anime-chip anime-chip-green">${esc(anime.statut)}</span>` : ''}
           </div>
+          ${blocSynopsis('anime-synopsis')}
         </div>
       </div>
     </div>
@@ -26,6 +28,11 @@ function _heroSkeleton(anime) {
 export async function loadAnimeModal(anime) {
   const content = document.getElementById('modal-anime-content');
   content.innerHTML = _heroSkeleton(anime);
+  // Une requete a part, jamais attendue par les episodes ; remplie dans le
+  // squelette, puis de nouveau dans la fiche rendue qui le remplace.
+  const synopsis = chargerSynopsis({ url: anime.url });
+  const _remplir = () => synopsis.then(t => remplirSynopsis(content.querySelector('.anime-synopsis'), t));
+  _remplir();
   try {
     // La langue par defaut ne conditionne pas la requete d'episodes : les
     // enchainer coutait un aller-retour complet avant de commencer le vrai.
@@ -35,6 +42,7 @@ export async function loadAnimeModal(anime) {
     ]);
     const brut = reglages?.langue_defaut;
     renderAnimeModal(anime, episodes, brut ? String(brut).toUpperCase() : 'VOSTFR');
+    _remplir();
   } catch(e) {
     content.innerHTML = `<div data-s="color:var(--red);padding:20px">❌ ${esc(e.message)}</div>`;
   }
@@ -71,6 +79,7 @@ function renderAnimeModal(anime, data, langueDefaut = 'VOSTFR') {
             ${episodes.length ? `<span class="anime-chip">${total} épisode${total > 1 ? 's' : ''}</span>` : ''}
             ${languesDispos.map(l => `<span class="anime-chip anime-chip-soft">${esc(l)}</span>`).join('')}
           </div>
+          ${blocSynopsis('anime-synopsis')}
           <div class="anime-hero-actions" id="dl-all-btns">
             ${languesDispos.map(l => `
               <button class="btn btn-ram btn-sm" id="btn-all-${l.replace(/\s/g,'_')}">

@@ -73,6 +73,7 @@ def test_lancement_normal_ne_purge_rien(monkeypatch):
     monkeypatch.setattr(storage, "purger_cle_installation", lambda: appels.append(True))
     monkeypatch.setattr(sys, "argv", ["AnimeSama.exe"])
     monkeypatch.setattr(desktop.server, "wait_for_server", lambda *a, **k: True)
+    monkeypatch.setattr(desktop.server, "installation_en_ecoute", lambda *a, **k: "")
 
     class _FakeWebview:
         @staticmethod

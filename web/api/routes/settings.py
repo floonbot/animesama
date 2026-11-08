@@ -25,6 +25,9 @@ class SettingsBody(BaseModel):
     confirm_suppr:  bool | None = None
     skip_existants: bool | None = None
     langue_defaut:  str  | None = None
+    veille_nouveautes:   bool | None = None
+    veille_intervalle_h: int  | None = None
+    veille_auto_dl:      bool | None = None
 
 def _valider_dossier(chemin: str) -> tuple[bool, str]:
     if chemin == "":
@@ -111,7 +114,11 @@ async def verifier_dossier(chemin: str = Query("", max_length=400)):
 
 @router.get("")
 async def get_settings():
-    return await asyncio.to_thread(load_settings)
+    from engine.utils.notifications import coupees_par_windows
+
+    s = await asyncio.to_thread(load_settings)
+    # Lecture seule, jamais sauvee : dit pourquoi aucune notification ne s'affiche.
+    return {**s, "notifs_coupees_par_windows": await asyncio.to_thread(coupees_par_windows)}
 
 @router.post("")
 async def update_settings(body: SettingsBody):
@@ -157,6 +164,15 @@ async def update_settings(body: SettingsBody):
         lang = str(body.langue_defaut).upper().strip()
         if lang in ("VOSTFR", "VF"):
             s["langue_defaut"] = lang
+    if body.veille_nouveautes is not None:
+        s["veille_nouveautes"] = bool(body.veille_nouveautes)
+    if body.veille_intervalle_h is not None:
+        from engine.library.veille import INTERVALLES_H
+        if body.veille_intervalle_h not in INTERVALLES_H:
+            return {"ok": False, "message": f"Intervalle invalide (attendu : {list(INTERVALLES_H)} h)"}
+        s["veille_intervalle_h"] = body.veille_intervalle_h
+    if body.veille_auto_dl is not None:
+        s["veille_auto_dl"] = bool(body.veille_auto_dl)
 
     if not await asyncio.to_thread(save_settings, s):
         return {"ok": False, "message": "Sauvegarde impossible (disque ?)"}

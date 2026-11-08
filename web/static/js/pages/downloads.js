@@ -106,6 +106,7 @@ export function renderQueue(state) {
   _bindDownloadDelegation();
   _lastQueueState = state;
   const { en_cours, queue = [], historique = [], elapsed = 0, en_pause = false } = state || {};
+  eta.synchroniserFile(state);
 
   _detectFinished(en_cours);
   renderEnCours(en_cours, elapsed, en_pause);
@@ -235,6 +236,7 @@ function renderEnCours(en_cours, elapsed, en_pause) {
         <span id="prog-eta"></span>
         <span id="prog-pct"></span>
       </div>
+      <div class="progress-meta" id="prog-anime"></div>
     </div>`;
 
   if (document.getElementById('page-telechargements')?.classList.contains('active')) {
@@ -296,9 +298,7 @@ function _majResumeFile() {
   const epsFile = Number(resteEl?.dataset.eps || 0);
   const total   = eta.resteTotalS(epsFile);
   const mesure  = eta.estMesuree();
-  const source  = mesure
-    ? `D'après la durée médiane de ${eta.nbEchantillons()} épisode(s) déjà téléchargé(s)`
-    : 'Aucun épisode mesuré : estimation par défaut de 8 min par épisode';
+  const source  = _sourceEstimation();
 
   if (resteEl) {
     resteEl.textContent = `⏱ ${mesure ? '' : '~'}${eta.fmtReste(total)}`;
@@ -310,12 +310,37 @@ function _majResumeFile() {
   }
 }
 
-/** Rafraichit les deux temps restants — appele chaque seconde par le minuteur. */
+function _sourceEstimation() {
+  return eta.estMesuree()
+    ? `D'après la durée médiane de ${eta.nbEchantillons()} épisode(s) déjà téléchargé(s)`
+    : 'Aucun épisode mesuré : estimation par défaut de 8 min par épisode';
+}
+
+/** Rafraichit les temps restants — appele chaque seconde par le minuteur. */
 export function majEtaAffiche() {
   const etaEl = document.getElementById('prog-eta');
   if (etaEl) {
     const reste = eta.resteEpisodeS();
-    etaEl.textContent = reste == null ? '' : '⏱ ' + eta.fmtReste(reste);
+    // Sous la seconde, le moteur assemble (95 % -> 100 %, 5 a 8 s mesures) :
+    // « 0 s » laisserait croire a un blocage.
+    etaEl.textContent = reste == null ? ''
+      : reste < 1 ? '⏱ finalisation…'
+      : '⏱ ' + eta.fmtReste(reste) + ' pour cet épisode';
+  }
+  // L'anime entier, file vide ou non : le resume de la file n'existe que s'il
+  // reste d'autres elements en attente, et un anime seul n'avait donc jamais de
+  // temps restant global.
+  const animeEl = document.getElementById('prog-anime');
+  if (animeEl) {
+    const suivants = eta.episodesRestantsItemCourant();
+    if (suivants > 0) {
+      const reste = eta.resteAnimeS();
+      animeEl.textContent = `🎬 Anime : ${eta.estMesuree() ? '' : '~'}${eta.fmtReste(reste)} restantes `
+        + `(${suivants + 1} épisodes) · fin vers ${eta.heureDeFin(reste)}`;
+      animeEl.title = _sourceEstimation();
+    } else {
+      animeEl.textContent = '';
+    }
   }
   _majResumeFile();
 }

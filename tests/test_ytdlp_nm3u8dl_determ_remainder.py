@@ -97,7 +97,7 @@ def _wire_ytdlp(monkeypatch, factory, final=None):
     monkeypatch.setattr(ytdlp_engine.subprocess, "Popen", factory)
     monkeypatch.setattr(ytdlp_engine, "_get_ytdlp_path", lambda: "yt-dlp")
     monkeypatch.setattr(ytdlp_engine, "_get_aria2c_path", lambda: None)
-    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n: final)
+    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n, avant=None: final)
     monkeypatch.setattr(ytdlp_engine, "_spawn_proc_watchdog", lambda *a, **k: None)
     monkeypatch.setattr(ytdlp_engine, "register_proc", lambda *a, **k: None)
     monkeypatch.setattr(ytdlp_engine, "unregister_proc", lambda *a, **k: None)

@@ -61,9 +61,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  if ('Notification' in window && Notification.permission === 'default') {
-    document.body.addEventListener('click', () => {
-      if (Notification.permission === 'default') Notification.requestPermission();
-    }, { once: true });
-  }
+  // Les notifications partent du serveur (engine/utils/notifications.py) :
+  // WebView2 refuse d'office l'API Notification du web.
 });

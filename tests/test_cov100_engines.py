@@ -109,10 +109,18 @@ class _FixedClock:
         return self.value
 
 
+def _ecriture_directe():
+    raise OSError("ecriture directe")
+
+
 def _neutralize(monkeypatch, module):
     monkeypatch.setattr(module, "_spawn_proc_watchdog", lambda *a, **k: threading.Event())
     monkeypatch.setattr(module, "register_proc", lambda *a, **k: None)
     monkeypatch.setattr(module, "unregister_proc", lambda *a, **k: None)
+    # Ces tests visent l'analyse de la sortie des moteurs : ecriture directe.
+    # Le passage par un dossier local : test_ecriture_locale_puis_livraison.py.
+    if hasattr(module, "creer_dossier_de_travail"):
+        monkeypatch.setattr(module, "creer_dossier_de_travail", _ecriture_directe)
 
 
 def test_find_ffmpeg_oserror_in_loop_falls_back_to_which(monkeypatch, tmp_path):
@@ -401,7 +409,7 @@ def test_ytdlp_empty_stdout_line_is_skipped(tmp_path, monkeypatch):
     monkeypatch.setattr(ytdlp_engine.subprocess, "Popen", factory)
     monkeypatch.setattr(ytdlp_engine, "_get_ytdlp_path", lambda: "yt-dlp")
     monkeypatch.setattr(ytdlp_engine, "_get_aria2c_path", lambda: None)
-    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n: str(final))
+    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n, avant=None: str(final))
     monkeypatch.setattr(user_settings, "load_settings", lambda: {"qualite": "auto"})
     _neutralize(monkeypatch, ytdlp_engine)
 
@@ -416,7 +424,7 @@ def test_ytdlp_cancel_detected_after_stdout_eof(tmp_path, monkeypatch):
     monkeypatch.setattr(ytdlp_engine.subprocess, "Popen", factory)
     monkeypatch.setattr(ytdlp_engine, "_get_ytdlp_path", lambda: "yt-dlp")
     monkeypatch.setattr(ytdlp_engine, "_get_aria2c_path", lambda: None)
-    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n: None)
+    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n, avant=None: None)
     monkeypatch.setattr(ytdlp_engine, "_terminate_tree", lambda p: None)
     monkeypatch.setattr(user_settings, "load_settings", lambda: {"qualite": "auto"})
     _neutralize(monkeypatch, ytdlp_engine)
@@ -433,7 +441,7 @@ def test_ytdlp_zero_rc_but_file_missing_logs_warning(tmp_path, monkeypatch, capl
     monkeypatch.setattr(ytdlp_engine.subprocess, "Popen", factory)
     monkeypatch.setattr(ytdlp_engine, "_get_ytdlp_path", lambda: "yt-dlp")
     monkeypatch.setattr(ytdlp_engine, "_get_aria2c_path", lambda: None)
-    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n: None)
+    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n, avant=None: None)
     monkeypatch.setattr(user_settings, "load_settings", lambda: {"qualite": "auto"})
     _neutralize(monkeypatch, ytdlp_engine)
 
@@ -452,7 +460,7 @@ def test_ytdlp_generic_exception_in_body_returns_none(tmp_path, monkeypatch):
     monkeypatch.setattr(ytdlp_engine, "_get_aria2c_path", lambda: None)
     monkeypatch.setattr(user_settings, "load_settings", lambda: {"qualite": "auto"})
 
-    def _boom(d, n):
+    def _boom(d, n, avant=None):
         raise ValueError("lookup exploded")
 
     monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", _boom)
@@ -478,7 +486,7 @@ def test_ytdlp_finally_kill_failure_swallowed(tmp_path, monkeypatch):
     monkeypatch.setattr(ytdlp_engine.subprocess, "Popen", factory)
     monkeypatch.setattr(ytdlp_engine, "_get_ytdlp_path", lambda: "yt-dlp")
     monkeypatch.setattr(ytdlp_engine, "_get_aria2c_path", lambda: None)
-    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n: str(final))
+    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n, avant=None: str(final))
     monkeypatch.setattr(ytdlp_engine, "_terminate_tree", lambda p: None)
     monkeypatch.setattr(user_settings, "load_settings", lambda: {"qualite": "auto"})
     monkeypatch.setattr(ytdlp_engine, "register_proc", lambda *a, **k: None)
@@ -505,7 +513,7 @@ def test_ytdlp_finally_outer_exception_swallowed(tmp_path, monkeypatch):
     monkeypatch.setattr(ytdlp_engine.subprocess, "Popen", factory)
     monkeypatch.setattr(ytdlp_engine, "_get_ytdlp_path", lambda: "yt-dlp")
     monkeypatch.setattr(ytdlp_engine, "_get_aria2c_path", lambda: None)
-    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n: str(final))
+    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n, avant=None: str(final))
     monkeypatch.setattr(ytdlp_engine, "_terminate_tree", lambda p: None)
     monkeypatch.setattr(user_settings, "load_settings", lambda: {"qualite": "auto"})
     monkeypatch.setattr(ytdlp_engine, "register_proc", lambda *a, **k: None)

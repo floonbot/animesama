@@ -29,6 +29,7 @@ import {
 import { openNetflixModal } from './library/netflix.js';
 import { confirmSuppression } from './library/confirm.js';
 import { renderAllAnimes } from './library/render.js';
+import { ouvrirSante } from './library/sante.js';
 
 function _debounce(fn, ms) {
   let t;
@@ -119,6 +120,14 @@ function _nomsDeLaListe(id) {
 function _listesPresentesLib() {
   return listesPresentes(_listesUnion);
 }
+
+// La veille du serveur vient de verifier : la page ouverte reprend son verdict
+// (deja en cache cote serveur) au lieu d'afficher l'ancien.
+window.addEventListener('nouveautes', () => {
+  if (document.getElementById('page-librairie')?.classList.contains('active')) {
+    checkNouveauxEpisodes(false);
+  }
+});
 
 export async function loadLibrairie(force, options = {}) {
   const forceReload = force === true;
@@ -255,6 +264,7 @@ export async function loadLibrairie(force, options = {}) {
           <button class="lib-expand-btn" id="lib-filter-incomplets">⚠️ Incomplets</button>
           <button class="lib-expand-btn" id="lib-check-updates" title="Vérifier les nouveaux épisodes en ligne">🆕 Nouveautés</button>
           <button class="lib-expand-btn" id="lib-coherence" title="Détecter les épisodes en trop (comparaison AniList)">🔎 Cohérence</button>
+          <button class="lib-expand-btn" id="lib-sante" title="Fichiers illisibles, tronqués ou restes de téléchargement">🩺 Santé</button>
           <button class="lib-expand-btn" id="lib-vue-toggle">${_vueMode === 'netflix' ? '☰ Liste' : '🎬 Netflix'}</button>
           <button class="lib-expand-btn" id="lib-refresh-toolbar" title="Rafraîchir" aria-label="Rafraîchir la librairie">🔄</button>
         </div>
@@ -414,6 +424,10 @@ function bindLibEvents() {
     if (Object.keys(state.updatesParAnime).length) {
       showUpdatesModal();
     }
+  });
+
+  document.getElementById('lib-sante')?.addEventListener('click', () => {
+    ouvrirSante(() => loadLibrairie(true));
   });
 
   document.getElementById('lib-coherence')?.addEventListener('click', async (e) => {

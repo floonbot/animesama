@@ -4,7 +4,7 @@ import { api }        from '../api.js';
 import { toast }      from '../components/toast.js';
 import { navigateTo } from '../router.js';
 import { cleAnime as _normaliser } from '../utils/texte.js';
-import { fmtReste, resteEpisodeS } from '../utils/eta.js';
+import { episodesRestantsItemCourant, fmtReste, resteAnimeS, resteEpisodeS } from '../utils/eta.js';
 import { etiquetteEpisode } from '../utils/etiquette.js';
 import { SUJET_LIBRAIRIE, SUJET_REGLAGES, abonnerVue } from '../utils/vue-live.js';
 import { LISTE_DEFAUT, filtrerListe } from '../utils/listes.js';
@@ -599,8 +599,10 @@ export function updateHomeDlProgress(pct) {
 export function majHomeEta() {
   const el = document.getElementById('home-dl-eta');
   if (!el) return;
-  const reste = resteEpisodeS();
-  el.textContent = reste == null ? '' : `⏱ ${fmtReste(reste)} restantes`;
+  // L'anime entier quand d'autres episodes suivent : c'est la question que la
+  // carte de l'accueil doit trancher (« quand aurai-je fini ? »).
+  const reste = episodesRestantsItemCourant() > 0 ? resteAnimeS() : resteEpisodeS();
+  el.textContent = reste == null ? '' : reste < 1 ? '⏱ finalisation…' : `⏱ ${fmtReste(reste)} restantes`;
 }
 
 function startSessionWatch() {

@@ -1,5 +1,6 @@
 
 import copy
+import json
 import logging
 import os
 import shutil
@@ -20,6 +21,7 @@ from engine.download._engine_utils import (
     NO_WINDOW_FLAGS,
     borner_nom_fichier,
     clean_subprocess_env,
+    mp4_complet,
 )
 from engine.download._engine_utils import (
     est_url_http as _est_url_http,
@@ -60,6 +62,14 @@ from engine.observability.redact import redact_url
 
 TAILLE_MIN_FICHIER = TAILLE_MIN_NM3U8DL
 EXTENSIONS_VIDEO   = VIDEO_EXTENSIONS
+
+# N_m3u8DL-RE fusionne les segments en « nom.ts » (« nom.copy.ts » si le nom est
+# pris), remuxe en « nom.MUX.mp4 », efface le .ts puis renomme le MUX en
+# « nom.mp4 ». Mesure sur la 0.6.0 au banc local (06/11/2026), commande de l'app :
+# si « nom.mp4 » existe deja, meme vide, il ne renomme pas et sort en code 0 ;
+# coupe pendant l'assemblage, il laisse le .ts et un MUX partiel.
+_MUX = ".MUX.mp4"
+_INTERMEDIAIRES = (".ts", ".copy.ts", _MUX, ".MUX.mkv")
 
 def _find_nm3u8dl() -> str | None:
     racines: list[str] = []
@@ -162,9 +172,9 @@ def _empreinte_fichier(chemin: str) -> tuple[int, int] | None:
     return (st.st_size, st.st_mtime_ns)
 
 def _sorties_video(dossier: str, nom: str) -> dict[str, tuple[int, int]]:
-    """Etat des sorties possibles avant de lancer le binaire."""
+    """Etat des sorties possibles avant de lancer le binaire, intermediaires compris."""
     etat: dict[str, tuple[int, int]] = {}
-    for ext in EXTENSIONS_VIDEO:
+    for ext in dict.fromkeys((*EXTENSIONS_VIDEO, *_INTERMEDIAIRES)):
         chemin = os.path.join(dossier, nom + ext)
         emp = _empreinte_fichier(chemin)
         if emp is not None:
@@ -195,6 +205,55 @@ def _trouver_fichier_final(
             continue
         return chemin
     return None
+
+def _adopter_mux(dossier: str, nom: str, avant: dict[str, tuple[int, int]]) -> str | None:
+    """Fait le renommage que N_m3u8DL-RE a refuse : « nom.MUX.mp4 » -> « nom.mp4 ».
+
+    Un « nom.mp4 » de 0 octet laisse par un autre moteur suffisait a le bloquer :
+    l'episode complet restait en .MUX, compte comme un echec, et la cascade
+    repartait. On n'adopte que le MUX de cette tentative, et seulement si son
+    conteneur a ete ferme — sinon c'est un mux coupe en route.
+    """
+    mux = os.path.join(dossier, nom + _MUX)
+    emp = _empreinte_fichier(mux)
+    if emp is None or emp[0] <= TAILLE_MIN_FICHIER or avant.get(mux) == emp:
+        return None
+    if not mp4_complet(mux):
+        return None
+    final = os.path.join(dossier, nom + ".mp4")
+    try:
+        os.replace(mux, final)
+    except OSError as e:
+        log.warning(f"Mux complet mais renommage impossible ({e}) : {os.path.basename(mux)}")
+        return None
+    log.info(f"N_m3u8DL-RE n'avait pas renommé son mux — « {os.path.basename(final)} » repris")
+    return final
+
+def _nettoyer_intermediaires(
+    dossier: str, nom: str, avant: dict[str, tuple[int, int]], garder: str | None
+) -> int:
+    """Retire ce que cette tentative a laisse en route : .ts fusionne, mux.
+
+    Annule pendant l'assemblage, un episode laissait un .ts complet — pris
+    ensuite pour l'episode termine — et un .MUX.mp4 partiel. Ce qui etait la
+    avant la tentative, inchange, ne la regarde pas.
+    """
+    retires = 0
+    for suffixe in _INTERMEDIAIRES:
+        chemin = os.path.join(dossier, nom + suffixe)
+        if chemin == garder:
+            continue
+        emp = _empreinte_fichier(chemin)
+        if emp is None or avant.get(chemin) == emp:
+            continue
+        try:
+            os.remove(chemin)
+            retires += 1
+        except OSError as e:
+            log.debug(f"intermédiaire non retiré ({os.path.basename(chemin)}) : {e}")
+    if retires:
+        log.info(f"{retires} fichier(s) intermédiaire(s) de N_m3u8DL-RE retiré(s)")
+    return retires
 
 def _nettoyer_residus_mux(dossier: str, nom: str) -> int:
     removed = 0
@@ -498,14 +557,19 @@ def nm3u8dl_download(
                 pass
 
         chemin = _trouver_fichier_final(dossier, nom, sorties_avant)
+        if chemin is None or not chemin.endswith(".mp4"):
+            chemin = _adopter_mux(dossier, nom, sorties_avant) or chemin
         if chemin:
+            # Avant tout le reste : un echec plus bas ne doit pas faire passer
+            # le fichier final pour un intermediaire a nettoyer.
+            succeeded = True
             try:
                 taille_mb = os.path.getsize(chemin) // 1024 // 1024
             except OSError:
                 taille_mb = 0
             log.success(f"Téléchargement réussi — {nom} ({taille_mb} MB)")  # type: ignore[attr-defined]
-            succeeded = True
             _nettoyer_residus_mux(dossier, nom)
+            _nettoyer_intermediaires(dossier, nom, sorties_avant, garder=chemin)
             return _remux_fix(chemin, callback)
 
         log.warning(
@@ -529,36 +593,71 @@ def nm3u8dl_download(
             proc, watchdog, stop_monitor, monitor_thread,
             tmp_dir, succeeded, user_cancelled,
         )
+        # Apres _cleanup_run : le binaire est mort, ses fichiers ne sont plus ouverts.
+        if not succeeded:
+            _nettoyer_intermediaires(dossier, nom, sorties_avant, garder=None)
 
 _SEGMENTS_EXT = (".ts", ".m4s", ".mp4")
+# N_m3u8DL-RE 0.6.0 range ses segments sous « <tmp>/<nom>/<piste>/00.ts », deux
+# niveaux sous --tmp-dir (releve le 07/11/2026 sur un banc HLS local). Lu au
+# seul premier niveau, le dossier ne contenait aucun segment : la progression
+# restait a « 0/71 segments » jusqu'a l'assemblage, et le temps restant de
+# l'interface, qui se mesure sur l'avancement, ne s'affichait jamais.
+_PROFONDEUR_SEGMENTS = 3
+# Ecrit avant le telechargement : une entree par piste retenue, avec son nombre
+# de segments. La console n'annonce « N Segments » que piste par piste, et seule
+# la derniere ligne restait — l'audio quand video et audio sont separes.
+_META_SELECTION = "meta_selected.json"
+
+
+def _parcourir_segments(dossier: str, profondeur: int, cumul: list) -> bool:
+    # Un scandir par dossier : sous Windows, DirEntry.stat() rend la taille lue
+    # par le parcours, sans syscall supplementaire. L'ancienne boucle
+    # isfile+getsize par segment coutait 90 ms par tick a 1500 segments.
+    try:
+        with os.scandir(dossier) as entrees:
+            for e in entrees:
+                try:
+                    if e.is_dir(follow_symlinks=False):
+                        if profondeur > 0:
+                            _parcourir_segments(e.path, profondeur - 1, cumul)
+                        continue
+                    if e.name == _META_SELECTION:
+                        cumul[2] = e.path
+                        continue
+                    if not e.name.endswith(_SEGMENTS_EXT) or not e.is_file():
+                        continue
+                    cumul[1] += e.stat().st_size
+                except OSError:
+                    continue
+                cumul[0] += 1
+    except OSError:
+        return False
+    return True
+
+
+def _segments_attendus(chemin_meta: str) -> int:
+    try:
+        with open(chemin_meta, encoding="utf-8-sig") as f:
+            pistes = json.load(f)
+        return sum(int(p.get("SegmentsCount") or 0) for p in pistes if isinstance(p, dict))
+    except (OSError, ValueError, TypeError, AttributeError):
+        return 0  # en cours d'ecriture : on relira au tick suivant
+
 
 def _mesurer_progression_tmp(
     tmp_dir: str,
     state: dict,
     callback: Callable[[float, str], None] | None,
 ) -> None:
-    # Un seul scandir : sous Windows, DirEntry.stat() rend la taille lue par le
-    # parcours du dossier, sans syscall supplementaire. L'ancienne boucle
-    # isfile+getsize par segment coutait 90 ms par tick a 1500 segments, une
-    # fois par seconde et en croissance pendant tout le telechargement.
-    done = 0
-    cur_size = 0
-    try:
-        with os.scandir(tmp_dir) as entrees:
-            for e in entrees:
-                if not e.name.endswith(_SEGMENTS_EXT):
-                    continue
-                try:
-                    if not e.is_file():
-                        continue
-                    cur_size += e.stat().st_size
-                except OSError:
-                    continue
-                done += 1
-    except OSError:
+    cumul: list = [0, 0, None]  # segments, octets, chemin de meta_selected.json
+    if not _parcourir_segments(tmp_dir, _PROFONDEUR_SEGMENTS, cumul):
         return
+    done, cur_size, meta = cumul
+    if meta and not state.get("segs_attendus"):
+        state["segs_attendus"] = _segments_attendus(meta)
 
-    total = state["total_segs"]
+    total = state.get("segs_attendus") or state["total_segs"]
 
     now = time.time()
     dt  = now - state["last_time"]

@@ -12,7 +12,15 @@ from engine.scraping.site.animessama import SITE_LANGS, SITE_URL
 
 log = logging.getLogger("engine.scraping.episodes")
 
-_ep_disk = DiskCache("episodes", 3600)
+# Les entrees portent les noms de saisons de parse_panneaux, et le telechargement
+# range les fichiers d'apres ces noms. Le cache survit une heure au redemarrage :
+# changer cette version a chaque fois que le parseur rend autre chose pour une
+# meme page, sinon la mise a jour resservirait les noms de l'ancien binaire.
+# 2 — commentaire de documentation de la fiche ignore (11/2026).
+# 3 — sections desactivees par <!-- ... --> ignorees (07/11/2026).
+_VERSION_CACHE = "3"
+
+_ep_disk = DiskCache("episodes", 3600, version=_VERSION_CACHE)
 
 
 def invalidate_ep_disk(url: str | None = None) -> None:

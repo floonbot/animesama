@@ -175,6 +175,12 @@
   color: var(--muted);
 }
 
+#prog-anime {
+  color: var(--text-soft);
+  font-weight: 700;
+}
+#prog-anime:empty { display: none; }
+
 .queue-list {
   display: flex;
   flex-direction: column;

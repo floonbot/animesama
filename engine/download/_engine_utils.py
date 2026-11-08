@@ -1,9 +1,12 @@
 import logging
 import os
 import re
+import shutil
 import signal
+import struct
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from collections.abc import Callable
@@ -35,6 +38,81 @@ def borner_nom_fichier(dossier: str, nom: str, ext: str = "", silencieux: bool =
             "Chemin trop long pour Windows (%d car.) — nom raccourci : %s", len(complet), court
         )
     return court or nom[:MAX_PATH_NT]
+
+def mp4_complet(chemin: str) -> bool:
+    """Le conteneur a ete ferme : boites entieres jusqu'a la fin, et un moov.
+
+    ffmpeg n'ecrit le moov qu'en fin de mux et laisse d'ici la la taille de mdat
+    a 0 (« jusqu'a la fin du fichier ») : un mux coupe en route n'a pas de moov.
+    On ne lit que les en-tetes de boites — quelques octets chacune, meme sur un
+    partage reseau.
+    """
+    try:
+        taille = os.path.getsize(chemin)
+        with open(chemin, "rb") as f:
+            pos = 0
+            moov = False
+            while pos < taille:
+                f.seek(pos)
+                entete = f.read(8)
+                if len(entete) < 8:
+                    return False
+                longueur, type_boite = struct.unpack(">I4s", entete)
+                if longueur == 1:
+                    etendue = f.read(8)
+                    if len(etendue) < 8:
+                        return False
+                    longueur = struct.unpack(">Q", etendue)[0]
+                elif longueur == 0:
+                    longueur = taille - pos
+                if longueur < 8 or pos + longueur > taille:
+                    return False
+                moov = moov or type_boite == b"moov"
+                pos += longueur
+            return moov
+    except OSError:
+        return False
+
+# Les moteurs ecrivent d'abord ici, puis livrent dans le dossier de telechargement.
+# Mesure du 06/11/2026 sur un partage SMB de NAS : ffmpeg -movflags +faststart
+# y echoue en fin de course (« Error writing trailer: Invalid argument ») alors
+# que la meme commande reussit sur un disque local. _remux_fix procedait deja
+# ainsi, et c'etait le seul chemin qui marchait.
+_PREFIXE_TRAVAIL = "animesama_travail_"
+_TRAVAIL_PERIME_S = 86_400  # un episode est coupe a 3 h 30 : au-dela, run tue
+
+def creer_dossier_de_travail() -> str:
+    """Dossier local jetable ; l'appelant le retire. Purge ceux d'un run tue."""
+    base = tempfile.gettempdir()
+    limite = time.time() - _TRAVAIL_PERIME_S
+    try:
+        for entree in os.scandir(base):
+            if entree.name.startswith(_PREFIXE_TRAVAIL) and entree.is_dir(follow_symlinks=False):
+                if entree.stat().st_mtime < limite:
+                    shutil.rmtree(entree.path, ignore_errors=True)
+    except OSError:
+        log.debug("purge des dossiers de travail impossible", exc_info=True)
+    return tempfile.mkdtemp(prefix=_PREFIXE_TRAVAIL)
+
+def livrer(source: str, destination: str) -> None:
+    """Pose le fichier fini a sa place, sans jamais y exposer un fichier partiel.
+
+    Sur un autre volume, une copie coupee en route laisserait sinon une video
+    tronquee sous le nom final — que skip_existants prendrait pour l'episode.
+    """
+    try:
+        os.replace(source, destination)
+        return
+    except OSError:
+        pass  # autre volume : copie sous un nom provisoire, puis renommage sur place
+    provisoire = destination + ".livraison"
+    try:
+        shutil.copyfile(source, provisoire)
+        os.replace(provisoire, destination)
+    except BaseException:
+        supprimer_silencieux(provisoire)
+        raise
+    supprimer_silencieux(source)
 
 def clean_subprocess_env() -> dict[str, str]:
     env: dict[str, str] = dict(os.environ)

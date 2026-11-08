@@ -59,12 +59,13 @@ test("les neuf reglages sont groupes en sections", async ({ page }) => {
       return c.textContent.trim();
     }));
   expect(legendes).toEqual([
-    "Téléchargement", "Dossiers", "Notifications",
+    "Téléchargement", "Dossiers", "Notifications", "Nouveaux épisodes",
     "Comportement", "Compte anime-sama",
   ]);
 
   for (const id of ["set-qualite", "set-threads", "set-dldir", "set-scandir",
-    "set-notifs", "set-son", "set-skip", "set-confirm", "set-langue"]) {
+    "set-notifs", "set-son", "set-skip", "set-confirm", "set-langue",
+    "set-veille", "set-veille-intervalle", "set-veille-dl"]) {
     await expect(page.locator(`#${id}`)).toHaveCount(1);
   }
 });

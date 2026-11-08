@@ -133,7 +133,7 @@ def test_video_complete_conservee(tmp_path, monkeypatch):
     cible = tmp_path / "ep.mp4"
     proc = _Proc(_Sortie(["[download] 100% of 20.00MiB"], str(cible)))
     _preparer(monkeypatch, proc)
-    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n: str(cible))
+    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n, avant=None: str(cible))
     cible.write_bytes(b"A" * 20_000_000)
 
     res = ytdlp_engine.ytdlp_download("http://host.example/v", str(tmp_path), "ep", {}, [False])

@@ -1284,3 +1284,62 @@
   width:55%;
   margin-bottom:8px;
 }
+
+/* Controle de sante de la librairie */
+.sante-liste {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 55vh;
+  overflow-y: auto;
+  margin: var(--space-3) 0;
+}
+.sante-groupe {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+}
+.sante-groupe-tete {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px var(--space-3);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+.sante-groupe-titre { flex: 1; min-width: 0; }
+.sante-groupe-compte,
+.sante-item-taille {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.sante-aide {
+  margin: 0 var(--space-3) var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-soft);
+}
+.sante-items {
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--space-3) var(--space-2);
+  max-height: 30vh;
+  overflow-y: auto;
+}
+.sante-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 0;
+  font-size: var(--text-xs);
+}
+.sante-item-nom {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sante-avance { width: 0; }

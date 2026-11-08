@@ -108,12 +108,20 @@ class _FixedClock:
         return self.value
 
 
+def _ecriture_directe():
+    raise OSError("ecriture directe")
+
+
 def _neutralize(monkeypatch, module):
     import threading
 
     monkeypatch.setattr(module, "_spawn_proc_watchdog", lambda *a, **k: threading.Event())
     monkeypatch.setattr(module, "register_proc", lambda *a, **k: None)
     monkeypatch.setattr(module, "unregister_proc", lambda *a, **k: None)
+    # Ces tests visent l'analyse de la sortie des moteurs : ecriture directe.
+    # Le passage par un dossier local : test_ecriture_locale_puis_livraison.py.
+    if hasattr(module, "creer_dossier_de_travail"):
+        monkeypatch.setattr(module, "creer_dossier_de_travail", _ecriture_directe)
 
 
 def test_get_nm3u8dl_path_late_search_misses_returns_none(monkeypatch):
@@ -379,7 +387,7 @@ def test_ytdlp_no_stdout_pipe_skips_loop(tmp_path, monkeypatch):
     monkeypatch.setattr(ytdlp_engine.subprocess, "Popen", factory)
     monkeypatch.setattr(ytdlp_engine, "_get_ytdlp_path", lambda: "yt-dlp")
     monkeypatch.setattr(ytdlp_engine, "_get_aria2c_path", lambda: None)
-    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n: str(final))
+    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n, avant=None: str(final))
     monkeypatch.setattr(user_settings, "load_settings", lambda: {"qualite": "auto"})
     _neutralize(monkeypatch, ytdlp_engine)
 
@@ -402,7 +410,7 @@ def test_ytdlp_neutral_stdout_line_falls_through(tmp_path, monkeypatch):
     monkeypatch.setattr(ytdlp_engine.subprocess, "Popen", factory)
     monkeypatch.setattr(ytdlp_engine, "_get_ytdlp_path", lambda: "yt-dlp")
     monkeypatch.setattr(ytdlp_engine, "_get_aria2c_path", lambda: None)
-    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n: str(final))
+    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n, avant=None: str(final))
     monkeypatch.setattr(user_settings, "load_settings", lambda: {"qualite": "auto"})
     _neutralize(monkeypatch, ytdlp_engine)
 

@@ -5,17 +5,8 @@ episode_done doit porter la vraie raison, en français, actionnable.
 
 import asyncio
 
-import pytest
-
 from engine.download import pipeline
 from engine.download.queue import CancelToken
-
-
-@pytest.fixture(autouse=True)
-def _reset_causes():
-    pipeline._causes_echec.clear()
-    yield
-    pipeline._causes_echec.clear()
 
 
 class FakeQueue:
@@ -59,16 +50,17 @@ def test_disque_plein_remonte_jusqu_a_l_utilisateur(monkeypatch):
     monkeypatch.setattr(pipeline, "_espace_disque_suffisant", lambda d: False)
 
     q = FakeQueue()
-    out = asyncio.run(
-        pipeline._lancer_download_pipeline(
-            "https://cdn.test/master.m3u8", "D:/dl", "ep", {}, q, "[x] E001",
-            _rien, _rien, _rien,
+    with pipeline._collecte_causes() as causes:
+        out = asyncio.run(
+            pipeline._lancer_download_pipeline(
+                "https://cdn.test/master.m3u8", "D:/dl", "ep", {}, q, "[x] E001",
+                _rien, _rien, _rien,
+            )
         )
-    )
 
     assert out is None
-    assert pipeline._causes_echec
-    assert "disque" in pipeline._causes_echec[-1].lower()
+    assert causes
+    assert "disque" in causes[-1].lower()
 
 
 def test_les_trois_moteurs_en_echec_donnent_une_cause_explicite(monkeypatch):
@@ -81,17 +73,17 @@ def test_les_trois_moteurs_en_echec_donnent_une_cause_explicite(monkeypatch):
     monkeypatch.setattr(pipeline, "_run_in_pool", pool)
 
     q = FakeQueue()
-    out = asyncio.run(
-        pipeline._lancer_download_pipeline(
-            "https://cdn.test/master.m3u8", "D:/dl", "ep", {}, q, "[x] E001",
-            _rien, _rien, _rien,
+    with pipeline._collecte_causes() as causes:
+        out = asyncio.run(
+            pipeline._lancer_download_pipeline(
+                "https://cdn.test/master.m3u8", "D:/dl", "ep", {}, q, "[x] E001",
+                _rien, _rien, _rien,
+            )
         )
-    )
 
     assert out is None
-    assert pipeline._causes_echec
-    cause = pipeline._causes_echec[-1].lower()
-    assert "moteur" in cause
+    assert causes
+    assert "moteur" in causes[-1].lower()
 
 
 def test_la_cause_remplace_le_message_generique(monkeypatch):
@@ -173,3 +165,37 @@ def test_scan_rate_donne_une_raison(monkeypatch):
     assert done[-1]["succes"] is False
     assert done[-1]["erreur"]
     assert "chapitre" in done[-1]["erreur"].lower()
+
+
+def test_le_prechargement_de_l_episode_suivant_ne_pollue_pas_les_causes(monkeypatch):
+    # Avec DL_PREFETCH=1, l'extraction de l'episode suivant tourne pendant la
+    # cascade de l'episode en cours : ses lecteurs refuses finissaient dans le
+    # message d'echec de l'episode en cours.
+    monkeypatch.setattr(pipeline, "RETRIES_EFFECTIFS", 1)
+
+    async def scenario():
+        prefetch_a_note = asyncio.Event()
+
+        async def prechargement():
+            pipeline._noter_cause("lecteur de l'épisode suivant refusé")
+            prefetch_a_note.set()
+
+        async def lecteurs_en_echec(*a, **k):
+            await prefetch_a_note.wait()
+            pipeline._noter_cause("sendvid : aucun fichier produit")
+            return None
+
+        monkeypatch.setattr(pipeline, "_ytdlp_sur_lecteurs", lecteurs_en_echec)
+        monkeypatch.setattr(pipeline, "_extraire_et_telecharger", _rien)
+        # Comme dans worker._traiter_episode : la tache part avant la cascade.
+        tache = asyncio.ensure_future(prechargement())
+        resultat = await pipeline._cascade_download(
+            [{"src": "https://sendvid.com/x", "host": "sendvid"}], [], "d", "n", "ep", FakeQueue()
+        )
+        await tache
+        return resultat
+
+    fichier, erreur = asyncio.run(scenario())
+
+    assert fichier is None
+    assert erreur == "sendvid : aucun fichier produit"

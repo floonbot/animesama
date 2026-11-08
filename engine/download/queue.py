@@ -22,7 +22,7 @@ def _item_identity(item: dict[str, Any]) -> str:
     except (TypeError, ValueError):
         return repr(item)
 
-_CLES_PROJETEES = ("id", "nom", "lang", "langue", "_scan", "_direct", "ep")
+_CLES_PROJETEES = ("id", "nom", "lang", "langue", "_scan", "_direct", "ep", "index_episode")
 
 def _projeter_item(item: dict[str, Any]) -> dict[str, Any]:
     episodes = item.get("episodes")

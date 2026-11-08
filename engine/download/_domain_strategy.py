@@ -79,10 +79,17 @@ def partition_lecteurs(
             f"avec URL invalide ignoré(s)"
         )
 
+    from engine.download._hotes_bloques import hote_bloque
+
     vivants = [l for l in valides if not hote_mort(get_domain(l.get("src", "")))]
     morts = len(valides) - len(vivants)
     if morts:
         log.info(f"partition_lecteurs : {morts} lecteur(s) d'hôte(s) hors service ignoré(s)")
+    ouverts = [l for l in vivants if not hote_bloque(get_domain(reecrire_domaine(l.get("src", ""))))]
+    if len(ouverts) < len(vivants):
+        log.info(f"partition_lecteurs : {len(vivants) - len(ouverts)} lecteur(s) d'hôte(s) "
+                 "qui refusent cette connexion ignoré(s)")
+    vivants = ouverts
 
     ytdlp:  list[dict[str, Any]] = []
     autres: list[dict[str, Any]] = []

@@ -12,9 +12,11 @@ log = logging.getLogger("engine.download.methods.ytdlp_engine")
 from engine.config.settings import TAILLE_MIN_YTDLP, VIDEO_EXTENSIONS
 from engine.domain.exceptions import DownloadCancelled
 from engine.download._engine_utils import (
+    MAX_PATH_NT,
     NO_WINDOW_FLAGS,
     borner_nom_fichier,
     clean_subprocess_env,
+    creer_dossier_de_travail,
     finaliser_process,
 )
 from engine.download._engine_utils import (
@@ -102,7 +104,9 @@ def _get_aria2c_path() -> str | None:
     _ARIA2C_PATH = _find_exe(["aria2c.exe", "aria2c"])
     return _ARIA2C_PATH
 
-def _trouver_fichier_final(dossier: str, nom: str) -> str | None:
+def _trouver_fichier_final(
+    dossier: str, nom: str, avant: dict[str, int] | None = None
+) -> str | None:
     for ext in EXTENSIONS_VIDEO:
         chemin = os.path.join(dossier, nom + ext)
         try:
@@ -121,19 +125,26 @@ def _trouver_fichier_final(dossier: str, nom: str) -> str | None:
             if any(f.endswith(e) for e in EXTENSIONS_VIDEO):
                 chemin = os.path.join(dossier, f)
                 try:
-                    if os.path.getsize(chemin) >= TAILLE_MIN_FICHIER:
-                        return chemin
+                    taille = os.path.getsize(chemin)
                 except OSError:
-                    pass
+                    continue
+                # Le repli ne retrouve que ce que cette execution a ecrit. Il
+                # adoptait le « nom.MUX.mp4 » laisse par N_m3u8DL-RE : succes
+                # annonce en quatre secondes, et un « nom.mp4 » de 0 octet.
+                if avant is not None and avant.get(f) == taille:
+                    continue
+                if taille >= TAILLE_MIN_FICHIER:
+                    return chemin
     except OSError:
         pass
     return None
 
 def _valider_sortie_ytdlp(
-    proc, dossier: str, nom: str, callback: Callable[[float, str], None] | None
+    proc, dossier: str, nom: str, callback: Callable[[float, str], None] | None,
+    avant: dict[str, int] | None = None,
 ) -> str | None:
     if proc.returncode == 0:
-        chemin = _trouver_fichier_final(dossier, nom)
+        chemin = _trouver_fichier_final(dossier, nom, avant)
         if chemin:
             taille_mb = os.path.getsize(chemin) // 1024 // 1024
             log.info(f"[yt-dlp] ✅ Succès — {nom} ({taille_mb} MB)")
@@ -328,7 +339,6 @@ def ytdlp_download(
         settings = {}
 
     qualite = str(settings.get("qualite") or "auto")
-    cmd     = _construire_commande(exe, url, dossier, nom, headers or {}, qualite, aria2c=_get_aria2c_path())
 
     domain = _get_domain(url)
     log.info(f"[yt-dlp] Téléchargement : {nom} ({domain}, qualité {qualite})")
@@ -341,8 +351,24 @@ def ytdlp_download(
     watchdog = None
     sorties_avant = _sorties_video(dossier, nom)
     chemin_valide = None
+    travail: str | None = None
 
     try:
+        # Telechargement et corrections en local, puis yt-dlp livre dans `dossier` :
+        # sa correction HLS (+faststart) echoue sur un partage SMB. Le nom final est
+        # borne pour `dossier` ; si le dossier local le rend trop long, ecriture
+        # directe. Cree dans le try : le finally le retire quoi qu'il arrive.
+        try:
+            travail = creer_dossier_de_travail()
+        except OSError as e:
+            log.debug(f"[yt-dlp] dossier de travail local indisponible ({e}) — écriture directe")
+        if travail and os.name == "nt" and len(os.path.join(travail, nom + ".temp.mp4")) > MAX_PATH_NT:
+            shutil.rmtree(travail, ignore_errors=True)
+            travail = None
+        cmd = _construire_commande(
+            exe, url, dossier, nom, headers or {}, qualite, aria2c=_get_aria2c_path(), travail=travail,
+        )
+
         proc = subprocess.Popen(
             cmd,
             stdin=subprocess.DEVNULL,
@@ -387,7 +413,7 @@ def ytdlp_download(
         if cancelled and cancelled[0]:
             raise DownloadCancelled()
 
-        chemin = _valider_sortie_ytdlp(proc, dossier, nom, callback)
+        chemin = _valider_sortie_ytdlp(proc, dossier, nom, callback, sorties_avant)
         if chemin:
             chemin_valide = chemin
             return chemin
@@ -410,4 +436,6 @@ def ytdlp_download(
         _nettoyer_fragments(dossier, nom)
         if chemin_valide is None:
             _supprimer_sortie_incomplete(dossier, nom, sorties_avant)
+        if travail:
+            shutil.rmtree(travail, ignore_errors=True)
         unregister_proc(proc)

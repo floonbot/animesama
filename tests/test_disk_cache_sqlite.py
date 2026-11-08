@@ -142,8 +142,12 @@ def test_les_appelants_existants_ne_changent_pas():
     import inspect
 
     sig = inspect.signature(dc.DiskCache.__init__)
+    params = list(sig.parameters.values())
 
-    assert list(sig.parameters) == ["self", "name", "ttl", "cap"]
+    assert [p.name for p in params[:4]] == ["self", "name", "ttl", "cap"]
     assert sig.parameters["cap"].default == 300
+    # Un parametre ajoute depuis (version) reste optionnel : c'est ce qui
+    # garantit qu'aucun appelant existant n'a a changer.
+    assert all(p.default is not inspect.Parameter.empty for p in params[4:])
     for methode in ("get", "set", "set_many", "delete", "clear"):
         assert callable(getattr(dc.DiskCache, methode))

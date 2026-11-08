@@ -28,6 +28,10 @@ DEFAULT_SETTINGS = {
     "confirm_suppr": True,
     "skip_existants": True,
     "langue_defaut": "VOSTFR",
+    # Veille des nouveaux episodes (engine/library/veille.py)
+    "veille_nouveautes":   True,
+    "veille_intervalle_h": 6,
+    "veille_auto_dl":      False,
 }
 
 def load_settings() -> dict:

@@ -195,7 +195,24 @@ def connect_queue() -> None:
 
     queue.subscribe(emit)
     queue.subscribe(_refresh_library_on_success)
+    queue.subscribe(_notifier_fin_anime)
     _queue_connected = True
+
+def _notifier_fin_anime(event_type: str, data: dict) -> None:
+    # Remplace la notification web du front, refusee d'office par WebView2.
+    if event_type != "anime_done" or data.get("annule"):
+        return
+    n = data.get("succes") or 0
+    if not n:
+        return
+    try:
+        from engine.utils.notifications import notifier
+
+        pluriel = "s" if n > 1 else ""
+        notifier("🎌 Anime terminé",
+                 f"{data.get('titre') or 'Anime'} — {n} épisode{pluriel} téléchargé{pluriel}")
+    except Exception:
+        log.debug("notification de fin d'anime non émise", exc_info=True)
 
 def _refresh_library_on_success(event_type: str, data: dict) -> None:
     if event_type == "anime_done":

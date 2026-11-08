@@ -303,7 +303,7 @@ def _patch_ytdlp_engine(monkeypatch, lignes):
     monkeypatch.setattr(ytdlp_engine, "register_proc", lambda *a, **k: None)
     monkeypatch.setattr(ytdlp_engine, "unregister_proc", lambda *a, **k: None)
     monkeypatch.setattr(ytdlp_engine, "_nettoyer_fragments", lambda d, n: 0)
-    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n: None)
+    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n, avant=None: None)
     monkeypatch.setattr(
         ytdlp_engine, "_spawn_proc_watchdog", lambda *a, **k: threading.Event()
     )

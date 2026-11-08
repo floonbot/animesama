@@ -25,7 +25,7 @@ for (const largeur of [2294, 1280]) {
       return +(t.getBoundingClientRect().top - c.getBoundingClientRect().top).toFixed(1);
     }));
 
-    expect(ecarts.length).toBe(5);
+    expect(ecarts.length).toBe(6);
     // Toutes les cartes au meme retrait : plus de titre a cheval sur la bordure.
     expect(new Set(ecarts).size).toBe(1);
     expect(ecarts[0]).toBeGreaterThan(15);
@@ -64,7 +64,7 @@ test("l'emoji est decoratif et separe du mot", async ({ page }) => {
   await ouvrir(page, 1280);
 
   const icones = page.locator(`${CARTES} .set-legende-icone`);
-  await expect(icones).toHaveCount(5);
+  await expect(icones).toHaveCount(6);
 
   const infos = await page.$$eval(`${CARTES} .set-legende-icone`, (els) => els.map((e) => ({
     cache: e.getAttribute("aria-hidden"),

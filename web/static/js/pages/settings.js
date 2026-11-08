@@ -137,6 +137,13 @@ export async function chargerReglages() {
       if (conf) conf.checked = s.confirm_suppr !== false;
       const lang = $('set-langue');
       if (lang) lang.value = s.langue_defaut || 'VOSTFR';
+      $('set-notifs-windows')?.classList.toggle('hidden', !s.notifs_coupees_par_windows);
+      const veille = $('set-veille');
+      if (veille) veille.checked = s.veille_nouveautes !== false;
+      const intervalle = $('set-veille-intervalle');
+      if (intervalle) intervalle.value = String(s.veille_intervalle_h || 6);
+      const veilleDl = $('set-veille-dl');
+      if (veilleDl) veilleDl.checked = s.veille_auto_dl === true;
       _valeursEnregistrees = {
         'set-dldir': (s.downloads_dir || '').trim(),
         'set-scandir': (s.scans_dir || '').trim(),
@@ -187,6 +194,9 @@ async function _sauvegarder() {
     skip_existants: $('set-skip')?.checked,
     confirm_suppr:  $('set-confirm')?.checked,
     langue_defaut:  $('set-langue')?.value,
+    veille_nouveautes:   $('set-veille')?.checked,
+    veille_intervalle_h: parseInt($('set-veille-intervalle')?.value || '6', 10),
+    veille_auto_dl:      $('set-veille-dl')?.checked,
   };
 
   const btn = $('settings-save');

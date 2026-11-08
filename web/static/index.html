@@ -117,6 +117,7 @@
             <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
           </span>
           <span class="nav-label">Librairie</span>
+          <span class="nav-badge hidden" id="lib-badge">0</span>
         </a>
         <a class="nav-item" id="nav-settings" data-page="parametres" aria-label="Paramètres">
           <span class="nav-icon" aria-hidden="true">
@@ -466,13 +467,43 @@
 
             <div class="form-group set-checkbox-row">
               <input type="checkbox" id="set-notifs" class="set-checkbox" />
-              <label for="set-notifs">Notifications navigateur à la fin d'un téléchargement</label>
+              <label for="set-notifs">Notifications Windows (fin d'un anime, nouveaux épisodes)</label>
+            </div>
+            <div class="set-help set-notifs-coupees hidden" id="set-notifs-windows" role="note">
+              ⚠️ Windows masque actuellement les notifications : réactive-les dans
+              Paramètres Windows › Système › Notifications pour les voir.
             </div>
 
             <div class="form-group set-checkbox-row">
               <input type="checkbox" id="set-son" class="set-checkbox" />
               <label for="set-son">Jouer un son quand un téléchargement se termine</label>
             </div>
+          </section>
+
+          <section class="set-groupe" role="group" aria-labelledby="set-titre-veille">
+            <h2 class="set-legende" id="set-titre-veille"><span class="set-legende-icone" aria-hidden="true">🆕</span>Nouveaux épisodes</h2>
+
+            <div class="form-group set-checkbox-row">
+              <input type="checkbox" id="set-veille" class="set-checkbox" />
+              <label for="set-veille">Vérifier en arrière-plan les nouveaux épisodes des animes de la librairie</label>
+            </div>
+
+            <div class="form-group">
+              <label for="set-veille-intervalle">Fréquence</label>
+              <select id="set-veille-intervalle" class="search-input set-select">
+                <option value="1">Toutes les heures</option>
+                <option value="3">Toutes les 3 heures</option>
+                <option value="6">Toutes les 6 heures</option>
+                <option value="12">Toutes les 12 heures</option>
+                <option value="24">Une fois par jour</option>
+              </select>
+            </div>
+
+            <div class="form-group set-checkbox-row">
+              <input type="checkbox" id="set-veille-dl" class="set-checkbox" />
+              <label for="set-veille-dl">Télécharger automatiquement ceux des animes de ma watchlist</label>
+            </div>
+            <div class="set-help">Chaque nouvel épisode n'est signalé, et mis en file, qu'une seule fois.</div>
           </section>
 
           <section class="set-groupe" role="group" aria-labelledby="set-titre-comport">

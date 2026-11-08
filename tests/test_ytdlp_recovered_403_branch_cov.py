@@ -82,7 +82,7 @@ def test_transient_403_then_success_keeps_file(tmp_path, monkeypatch):
     monkeypatch.setattr(ytdlp_engine.subprocess, "Popen", factory)
     monkeypatch.setattr(ytdlp_engine, "_get_ytdlp_path", lambda: "yt-dlp")
     monkeypatch.setattr(ytdlp_engine, "_get_aria2c_path", lambda: None)
-    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n: str(final))
+    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n, avant=None: str(final))
     _neutralize(monkeypatch)
 
     res = ytdlp_engine.ytdlp_download("http://host.example/video", str(tmp_path), "ep")
@@ -97,7 +97,7 @@ def test_403_without_file_still_raises_ratelimit(tmp_path, monkeypatch):
     monkeypatch.setattr(ytdlp_engine.subprocess, "Popen", factory)
     monkeypatch.setattr(ytdlp_engine, "_get_ytdlp_path", lambda: "yt-dlp")
     monkeypatch.setattr(ytdlp_engine, "_get_aria2c_path", lambda: None)
-    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n: None)
+    monkeypatch.setattr(ytdlp_engine, "_trouver_fichier_final", lambda d, n, avant=None: None)
     _neutralize(monkeypatch)
 
     import pytest

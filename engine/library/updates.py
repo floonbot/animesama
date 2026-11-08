@@ -244,6 +244,7 @@ async def check_updates_async(refresh: bool = False) -> dict:
                 "nom": anime_local["nom"],
                 "url": fav["url"],
                 "image": fav.get("image", ""),
+                "listes": fav.get("listes") or [],
                 "nouveaux_count": len(nouveaux),
                 "nouveaux_episodes": nouveaux,
             }
